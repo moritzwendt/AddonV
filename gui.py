@@ -1,11 +1,12 @@
 """Main GUI window built with PySide6."""
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QLocale
-from PySide6.QtGui import QDragEnterEvent, QDropEvent, QPalette, QColor
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QIcon, QPalette, QColor, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
@@ -32,6 +33,19 @@ from config import Config
 from gta_detect import derive_paths, find_default_install, is_gta_root
 from i18n import LANGUAGES, T
 from installers import install_dlc, install_els
+
+
+def _asset_path(name: str) -> str:
+    """Resolve a bundled asset both in dev mode and inside a PyInstaller build.
+
+    PyInstaller onedir puts datas next to the exe; onefile extracts to
+    `sys._MEIPASS`. In dev mode, assets live next to this source file.
+    """
+    if getattr(sys, "frozen", False):
+        base = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
+    else:
+        base = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base, name)
 
 
 def _system_default_language() -> str:
@@ -156,6 +170,17 @@ class MainWindow(QMainWindow):
         root_layout = QVBoxLayout(central)
         root_layout.setContentsMargins(14, 14, 14, 14)
         root_layout.setSpacing(10)
+
+        # --- Logo header ------------------------------------------------
+        logo_path = _asset_path("logo.png")
+        if os.path.exists(logo_path):
+            logo_lbl = QLabel()
+            pixmap = QPixmap(logo_path)
+            logo_lbl.setPixmap(
+                pixmap.scaledToHeight(96, Qt.SmoothTransformation)
+            )
+            logo_lbl.setAlignment(Qt.AlignCenter)
+            root_layout.addWidget(logo_lbl)
 
         # --- GTA path row -----------------------------------------------
         path_row = QHBoxLayout()
@@ -390,9 +415,30 @@ class MainWindow(QMainWindow):
         self.log_msg(T("dlclist_hint_no_xml", entry=entry))
 
 
+def _set_windows_app_id() -> None:
+    """Tell Windows to treat AddonV as its own app in the taskbar.
+
+    Without this, the taskbar groups under python.exe and shows its icon.
+    """
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("AddonV.App")
+    except Exception:
+        pass
+
+
 def run() -> None:
+    _set_windows_app_id()
     app = QApplication(sys.argv)
+    icon_path = _asset_path("logo.png")
+    if os.path.exists(icon_path):
+        icon = QIcon(icon_path)
+        app.setWindowIcon(icon)
     window = MainWindow()
+    if os.path.exists(icon_path):
+        window.setWindowIcon(icon)
     window.show()
     sys.exit(app.exec())
 

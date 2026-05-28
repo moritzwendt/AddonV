@@ -17,6 +17,12 @@ $ErrorActionPreference = "Stop"
 Write-Host "==> Cleaning previous build artifacts"
 Remove-Item -Recurse -Force build, dist, installer\output -ErrorAction SilentlyContinue
 
+Write-Host "==> Generating Windows .ico from logo.png"
+python -m pip install --quiet --disable-pip-version-check pillow
+if ($LASTEXITCODE -ne 0) { throw "pip install pillow failed" }
+python tools\build_icon.py
+if ($LASTEXITCODE -ne 0) { throw "icon generation failed" }
+
 Write-Host "==> Building application with PyInstaller (version $Version)"
 python -m PyInstaller --noconfirm AddonV.spec
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed" }

@@ -36,6 +36,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
 UninstallDisplayName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
+SetupIconFile=AddonV.ico
 ShowLanguageDialog=yes
 DisableProgramGroupPage=yes
 

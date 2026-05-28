@@ -42,7 +42,7 @@ def T(key: str, **kwargs) -> str:
 TRANSLATIONS: dict[str, dict[str, str]] = {
     "en": {
         # window / generic
-        "window_title": "AddonV — GTA Mod Installer",
+        "window_title": "AddonV",
         "ok": "OK",
         "cancel": "Cancel",
         "yes": "Yes",
@@ -138,7 +138,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
 
     "de": {
-        "window_title": "AddonV — GTA Mod Installer",
+        "window_title": "AddonV",
         "ok": "OK",
         "cancel": "Abbrechen",
         "yes": "Ja",
@@ -225,7 +225,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
 
     "ru": {
-        "window_title": "AddonV — установщик модов для GTA",
+        "window_title": "AddonV",
         "ok": "OK",
         "cancel": "Отмена",
         "yes": "Да",
@@ -312,7 +312,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
 
     "es": {
-        "window_title": "AddonV — Instalador de mods para GTA",
+        "window_title": "AddonV",
         "ok": "OK",
         "cancel": "Cancelar",
         "yes": "Sí",

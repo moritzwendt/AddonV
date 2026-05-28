@@ -3,8 +3,6 @@
 A small open-source GUI tool to install GTA V single-player mods
 (Add-On DLCs and ELS-VCF vehicle configs) by drag-and-drop.
 
-Multi-language UI: **English · Deutsch · Русский · Español**.
-
 ## Install (end users)
 
 1. Go to the [Releases page](../../releases) and download the latest

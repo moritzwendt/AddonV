@@ -1,0 +1,40 @@
+AddonV — Lizenz und Haftungsausschluss
+=======================================
+
+Dies ist freie Open-Source-Software, die OHNE JEGLICHE GEWÄHR
+bereitgestellt wird. Mit der Installation von AddonV erklärst du
+dich mit folgenden Punkten einverstanden:
+
+1. ZWECK
+   AddonV ist ein Hilfsprogramm zur Installation von GTA-V-Single-
+   player-Mods (Add-On-DLC, ELS-Fahrzeug-Konfigurationen). Es
+   verändert Dateien in deinem GTA-V-Installationsordner.
+
+2. KEINE VERBINDUNG
+   AddonV ist ein unabhängiges Community-Projekt. Es ist NICHT mit
+   Rockstar Games, Take-Two Interactive, Lcpdfr.com, ELS-LCPDFR
+   oder anderen Parteien verbunden, von ihnen unterstützt oder
+   autorisiert.
+
+3. NUTZUNG AUF EIGENE GEFAHR
+   • Das Modifizieren von GTA V kann gegen den Rockstar-Games-EULA
+     und die Nutzungsbedingungen von GTA Online verstoßen.
+   • Dieses Tool darf NICHT für GTA Online verwendet werden. Die
+     Nutzung von Mods im Onlinemodus kann zu Account-Sperren oder
+     dauerhaftem Ausschluss führen.
+   • Die Installation verändert Dateien in deinem Spielordner.
+     Fehlerhafte oder inkompatible Mods können deine Installation
+     beschädigen und eine Neuinstallation erforderlich machen.
+   • Sichere deine Spieldateien immer vor dem Installieren von Mods.
+
+4. KEINE HAFTUNG
+   Die Autoren und Mitwirkenden von AddonV haften nicht für Schäden,
+   Datenverluste, Account-Sperren, Bans oder andere Folgen, die aus
+   der Nutzung dieser Software entstehen.
+
+5. LIZENZ
+   AddonV wird unter der MIT-Lizenz veröffentlicht. Den vollständigen
+   Lizenztext findest du in der Datei LICENSE im Repository.
+
+Solltest du diesen Bedingungen nicht zustimmen, wähle "Ich stimme
+nicht zu" und brich die Installation ab.

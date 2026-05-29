@@ -121,6 +121,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlc_exists": "DLC '{name}' already exists in {dir}.",
         "dlc_copying": "Copying DLC '{name}' to {dir}…",
         "dlc_installed": "DLC '{name}' installed.",
+        "dlc_copy_failed": (
+            "Could not install DLC '{name}': {err}\n"
+            "  (Tip: installing into Program Files may require running AddonV as administrator.)"
+        ),
 
         # installer messages (ELS)
         "els_src_missing": "Source does not exist: {path}",
@@ -129,9 +133,23 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_copying_file": "Copying ELS file '{name}'…",
         "els_installed_file": "ELS file '{name}' installed.",
         "els_no_xmls": "No ELS-VCF XML files found.",
+        "els_some_exist": "{count} ELS file(s) already exist in the target folder.",
+        "els_copy_failed": "Could not install ELS '{name}': {err}",
+        "els_copy_failed_partial": "Stopped after {copied} file(s): could not copy '{name}': {err}",
         "els_skipped": "  skipped (exists): {name}",
         "els_copying": "  copying {name}",
         "els_summary": "ELS: {copied} copied, {skipped} skipped.",
+
+        # generic errors
+        "drop_nothing": "Nothing usable was dropped (only files and folders are supported).",
+        "unexpected_error": "Unexpected error: {err}",
+
+        # replace confirmation
+        "replace_title": "Replace?",
+        "dlc_replace_body": "DLC '{name}' already exists.\n\nReplace the existing version?",
+        "dlc_kept": "DLC '{name}' kept — not replaced.",
+        "els_replace_body": "ELS '{name}' already exists in the target folder.\n\nReplace the existing file(s)?",
+        "els_kept": "ELS '{name}' kept — not replaced.",
 
         # dlclist
         "dlclist_paths_close_missing": "`</Paths>` not found in dlclist.xml — file broken?",
@@ -210,6 +228,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlc_exists": "DLC '{name}' existiert bereits unter {dir}.",
         "dlc_copying": "Kopiere DLC '{name}' nach {dir}…",
         "dlc_installed": "DLC '{name}' installiert.",
+        "dlc_copy_failed": (
+            "DLC '{name}' konnte nicht installiert werden: {err}\n"
+            "  (Tipp: Für die Installation in Program Files muss AddonV evtl. als Administrator laufen.)"
+        ),
 
         "els_src_missing": "Quelle existiert nicht: {path}",
         "els_not_vcf": "'{name}' sieht nicht nach einer ELS-VCF-Datei aus.",
@@ -217,9 +239,21 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_copying_file": "Kopiere ELS-Datei '{name}'…",
         "els_installed_file": "ELS-Datei '{name}' installiert.",
         "els_no_xmls": "Keine ELS-VCF-XML-Dateien gefunden.",
+        "els_some_exist": "{count} ELS-Datei(en) existieren bereits im Zielordner.",
+        "els_copy_failed": "ELS '{name}' konnte nicht installiert werden: {err}",
+        "els_copy_failed_partial": "Nach {copied} Datei(en) abgebrochen: '{name}' konnte nicht kopiert werden: {err}",
         "els_skipped": "  übersprungen (existiert): {name}",
         "els_copying": "  kopiere {name}",
         "els_summary": "ELS: {copied} kopiert, {skipped} übersprungen.",
+
+        "drop_nothing": "Nichts Verwertbares abgelegt (nur Dateien und Ordner werden unterstützt).",
+        "unexpected_error": "Unerwarteter Fehler: {err}",
+
+        "replace_title": "Ersetzen?",
+        "dlc_replace_body": "DLC '{name}' existiert bereits.\n\nVorhandene Version ersetzen?",
+        "dlc_kept": "DLC '{name}' beibehalten — nicht ersetzt.",
+        "els_replace_body": "ELS '{name}' existiert bereits im Zielordner.\n\nVorhandene Datei(en) ersetzen?",
+        "els_kept": "ELS '{name}' beibehalten — nicht ersetzt.",
 
         "dlclist_paths_close_missing": "`</Paths>` in dlclist.xml nicht gefunden — Datei kaputt?",
     },
@@ -297,6 +331,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlc_exists": "DLC '{name}' уже существует в {dir}.",
         "dlc_copying": "Копирую DLC '{name}' в {dir}…",
         "dlc_installed": "DLC '{name}' установлен.",
+        "dlc_copy_failed": (
+            "Не удалось установить DLC '{name}': {err}\n"
+            "  (Совет: для установки в Program Files может потребоваться запуск AddonV от имени администратора.)"
+        ),
 
         "els_src_missing": "Источник не существует: {path}",
         "els_not_vcf": "'{name}' не похож на ELS-VCF файл.",
@@ -304,9 +342,21 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_copying_file": "Копирую ELS-файл '{name}'…",
         "els_installed_file": "ELS-файл '{name}' установлен.",
         "els_no_xmls": "ELS-VCF XML-файлы не найдены.",
+        "els_some_exist": "{count} ELS-файл(ов) уже существуют в целевой папке.",
+        "els_copy_failed": "Не удалось установить ELS '{name}': {err}",
+        "els_copy_failed_partial": "Остановлено после {copied} файл(ов): не удалось скопировать '{name}': {err}",
         "els_skipped": "  пропущен (существует): {name}",
         "els_copying": "  копирую {name}",
         "els_summary": "ELS: {copied} скопировано, {skipped} пропущено.",
+
+        "drop_nothing": "Не перетащено ничего подходящего (поддерживаются только файлы и папки).",
+        "unexpected_error": "Непредвиденная ошибка: {err}",
+
+        "replace_title": "Заменить?",
+        "dlc_replace_body": "DLC '{name}' уже существует.\n\nЗаменить существующую версию?",
+        "dlc_kept": "DLC '{name}' сохранён — не заменён.",
+        "els_replace_body": "ELS '{name}' уже существует в целевой папке.\n\nЗаменить существующий файл(ы)?",
+        "els_kept": "ELS '{name}' сохранён — не заменён.",
 
         "dlclist_paths_close_missing": "`</Paths>` не найден в dlclist.xml — файл повреждён?",
     },
@@ -384,6 +434,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlc_exists": "El DLC '{name}' ya existe en {dir}.",
         "dlc_copying": "Copiando DLC '{name}' a {dir}…",
         "dlc_installed": "DLC '{name}' instalado.",
+        "dlc_copy_failed": (
+            "No se pudo instalar el DLC '{name}': {err}\n"
+            "  (Consejo: instalar en Program Files puede requerir ejecutar AddonV como administrador.)"
+        ),
 
         "els_src_missing": "La fuente no existe: {path}",
         "els_not_vcf": "'{name}' no parece un archivo ELS-VCF.",
@@ -391,9 +445,21 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_copying_file": "Copiando archivo ELS '{name}'…",
         "els_installed_file": "Archivo ELS '{name}' instalado.",
         "els_no_xmls": "No se encontraron archivos XML ELS-VCF.",
+        "els_some_exist": "{count} archivo(s) ELS ya existen en la carpeta de destino.",
+        "els_copy_failed": "No se pudo instalar ELS '{name}': {err}",
+        "els_copy_failed_partial": "Detenido tras {copied} archivo(s): no se pudo copiar '{name}': {err}",
         "els_skipped": "  omitido (existe): {name}",
         "els_copying": "  copiando {name}",
         "els_summary": "ELS: {copied} copiados, {skipped} omitidos.",
+
+        "drop_nothing": "No se soltó nada utilizable (solo se admiten archivos y carpetas).",
+        "unexpected_error": "Error inesperado: {err}",
+
+        "replace_title": "¿Reemplazar?",
+        "dlc_replace_body": "El DLC '{name}' ya existe.\n\n¿Reemplazar la versión existente?",
+        "dlc_kept": "DLC '{name}' conservado — no reemplazado.",
+        "els_replace_body": "ELS '{name}' ya existe en la carpeta de destino.\n\n¿Reemplazar el/los archivo(s) existente(s)?",
+        "els_kept": "ELS '{name}' conservado — no reemplazado.",
 
         "dlclist_paths_close_missing": "`</Paths>` no encontrado en dlclist.xml — ¿archivo dañado?",
     },

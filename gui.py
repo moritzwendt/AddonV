@@ -32,7 +32,7 @@ import i18n
 from config import Config
 from gta_detect import derive_paths, find_default_install, is_gta_root
 from i18n import LANGUAGES, T
-from installers import install_dlc, install_els
+from installers import find_dlc_packs, install_dlc, install_els
 
 
 def _asset_path(name: str) -> str:
@@ -151,10 +151,14 @@ class DropZone(QFrame):
 
     def dropEvent(self, event: QDropEvent) -> None:
         self.setStyleSheet(self.BASE_STYLE)
+        handled = 0
         for url in event.mimeData().urls():
             local = url.toLocalFile()
             if local:
                 self._on_drop(Path(local))
+                handled += 1
+        if handled == 0:
+            self._on_drop(None)
 
 
 class MainWindow(QMainWindow):
@@ -380,22 +384,61 @@ class MainWindow(QMainWindow):
         self._refresh_labels()
 
     # ----- drop callbacks ----- #
-    def on_dlc_drop(self, src: Path) -> None:
+    def on_dlc_drop(self, src: Path | None) -> None:
+        if src is None:
+            self.log_msg("[!!] " + T("drop_nothing"))
+            return
         paths = self._ensure_paths()
         if not paths:
             return
-        result = install_dlc(src, paths["dlcpacks"], self.log_msg)
-        self.log_msg(("[OK] " if result.ok else "[!!] ") + result.message)
-        if result.ok and result.dlc_name:
-            self._handle_dlclist_update(result.dlc_name)
+        try:
+            packs = find_dlc_packs(src)
+            if not packs:
+                self.log_msg("[!!] " + T("dlc_no_rpf", name=src.name))
+                return
+            for pack in packs:
+                result = install_dlc(pack, paths["dlcpacks"], self.log_msg)
+                if result.conflict:
+                    if not self._confirm_replace(T("dlc_replace_body", name=pack.name)):
+                        self.log_msg("[!!] " + T("dlc_kept", name=pack.name))
+                        continue
+                    result = install_dlc(
+                        pack, paths["dlcpacks"], self.log_msg, overwrite=True
+                    )
+                self.log_msg(("[OK] " if result.ok else "[!!] ") + result.message)
+                if result.ok and result.dlc_name:
+                    self._handle_dlclist_update(result.dlc_name)
+        except Exception as exc:  # last-resort net: never swallow a failure silently
+            self.log_msg("[!!] " + T("unexpected_error", err=str(exc)))
 
-    def on_els_drop(self, src: Path) -> None:
+    def on_els_drop(self, src: Path | None) -> None:
+        if src is None:
+            self.log_msg("[!!] " + T("drop_nothing"))
+            return
         paths = self._ensure_paths()
         if not paths:
             return
-        target = paths["root"] / "ELS" / "pack_default"
-        result = install_els(src, target, self.log_msg)
-        self.log_msg(("[OK] " if result.ok else "[!!] ") + result.message)
+        try:
+            target = paths["root"] / "ELS" / "pack_default"
+            result = install_els(src, target, self.log_msg)
+            if result.conflict:
+                if not self._confirm_replace(T("els_replace_body", name=src.name)):
+                    self.log_msg("[!!] " + T("els_kept", name=src.name))
+                    return
+                result = install_els(src, target, self.log_msg, overwrite=True)
+            self.log_msg(("[OK] " if result.ok else "[!!] ") + result.message)
+        except Exception as exc:  # last-resort net: never swallow a failure silently
+            self.log_msg("[!!] " + T("unexpected_error", err=str(exc)))
+
+    def _confirm_replace(self, body: str) -> bool:
+        reply = QMessageBox.question(
+            self,
+            T("replace_title"),
+            body,
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        return reply == QMessageBox.Yes
 
     # ----- dlclist.xml handling ----- #
     def _handle_dlclist_update(self, dlc_name: str) -> None:

@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QListWidget,
+    QListWidgetItem,
     QMainWindow,
     QMessageBox,
     QPlainTextEdit,
@@ -32,7 +34,13 @@ import i18n
 from config import Config
 from gta_detect import derive_paths, find_default_install, is_gta_root
 from i18n import LANGUAGES, T
-from installers import find_dlc_packs, install_dlc, install_els
+from installers import (
+    find_dlc_packs,
+    install_dlc,
+    install_els,
+    list_installed_dlcs,
+    uninstall_dlc,
+)
 
 
 def _asset_path(name: str) -> str:
@@ -161,6 +169,87 @@ class DropZone(QFrame):
             self._on_drop(None)
 
 
+class ManageModsDialog(QDialog):
+    """List installed DLC packs and let the user remove them.
+
+    Removing a pack deletes its folder under `dlcpacks/` and, if a dlclist.xml
+    is configured, drops the matching `<Item>` entry too.
+    """
+
+    def __init__(self, dlcpacks_dir: Path, dlclist_xml: str, log, parent=None):
+        super().__init__(parent)
+        self._dlcpacks_dir = dlcpacks_dir
+        self._dlclist_xml = dlclist_xml
+        self._log = log
+
+        self.setWindowTitle(T("manage_dialog_title"))
+        self.setModal(True)
+        self.resize(440, 360)
+
+        layout = QVBoxLayout(self)
+        self._list = QListWidget()
+        self._list.setStyleSheet("background-color: #1c1c1e; color: #ddd; border: 1px solid #444;")
+        self._list.itemSelectionChanged.connect(self._sync_buttons)
+        layout.addWidget(self._list)
+
+        btn_row = QHBoxLayout()
+        self._remove_btn = QPushButton(T("manage_remove_btn"))
+        self._remove_btn.clicked.connect(self._remove_selected)
+        close_btn = QPushButton(T("manage_close_btn"))
+        close_btn.clicked.connect(self.accept)
+        btn_row.addWidget(self._remove_btn)
+        btn_row.addStretch(1)
+        btn_row.addWidget(close_btn)
+        layout.addLayout(btn_row)
+
+        self._refresh()
+
+    def _refresh(self) -> None:
+        self._list.clear()
+        names = list_installed_dlcs(self._dlcpacks_dir)
+        if names:
+            for name in names:
+                self._list.addItem(QListWidgetItem(name))
+        else:
+            placeholder = QListWidgetItem(T("manage_empty"))
+            placeholder.setFlags(Qt.NoItemFlags)
+            self._list.addItem(placeholder)
+        self._sync_buttons()
+
+    def _sync_buttons(self) -> None:
+        self._remove_btn.setEnabled(self._selected_name() is not None)
+
+    def _selected_name(self) -> str | None:
+        item = self._list.currentItem()
+        if item is None or not (item.flags() & Qt.ItemIsSelectable):
+            return None
+        return item.text()
+
+    def _remove_selected(self) -> None:
+        name = self._selected_name()
+        if name is None:
+            return
+        reply = QMessageBox.question(
+            self,
+            T("manage_confirm_title"),
+            T("manage_confirm_body", name=name),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        result = uninstall_dlc(name, self._dlcpacks_dir, self._log)
+        self._log(("[OK] " if result.ok else "[!!] ") + result.message)
+        if result.ok and self._dlclist_xml and Path(self._dlclist_xml).is_file():
+            try:
+                if dlclist.remove_from_file(Path(self._dlclist_xml), name):
+                    self._log(T("dlclist_entry_removed", name=name))
+            except Exception as exc:
+                self._log(T("dlclist_error", err=str(exc)))
+        self._refresh()
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -194,8 +283,11 @@ class MainWindow(QMainWindow):
         self.choose_btn.clicked.connect(self.choose_gta_path)
         self.lang_btn = QPushButton()
         self.lang_btn.clicked.connect(self.choose_language)
+        self.manage_btn = QPushButton()
+        self.manage_btn.clicked.connect(self.manage_mods)
         path_row.addWidget(self.path_label, stretch=1)
         path_row.addWidget(self.choose_btn)
+        path_row.addWidget(self.manage_btn)
         path_row.addWidget(self.lang_btn)
         root_layout.addLayout(path_row)
 
@@ -272,9 +364,19 @@ class MainWindow(QMainWindow):
         self.config.save()
         self.retranslate_ui()
 
+    def manage_mods(self) -> None:
+        paths = self._ensure_paths()
+        if not paths:
+            return
+        dlg = ManageModsDialog(
+            paths["dlcpacks"], self.config.dlclist_xml_path, self.log_msg, parent=self
+        )
+        dlg.exec()
+
     def retranslate_ui(self) -> None:
         self.setWindowTitle(T("window_title"))
         self.choose_btn.setText(T("choose_gta_btn"))
+        self.manage_btn.setText(T("manage_btn"))
         self.lang_btn.setText(T("lang_button"))
         self.mods_checkbox.setText(T("mods_checkbox"))
         self.zone_dlc.set_texts(T("dlc_zone_title"), T("dlc_zone_hint"))

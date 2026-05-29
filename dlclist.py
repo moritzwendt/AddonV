@@ -56,12 +56,24 @@ def update_file(xml_path: Path, dlc_name: str) -> bool:
 
     Returns True if the file was actually modified.
     """
+    return _edit_file(xml_path, lambda text: add_dlc_entry(text, dlc_name))
+
+
+def remove_from_file(xml_path: Path, dlc_name: str) -> bool:
+    """Remove an entry from the file; create a single .bak before first edit.
+
+    Returns True if the file was actually modified.
+    """
+    return _edit_file(xml_path, lambda text: remove_dlc_entry(text, dlc_name))
+
+
+def _edit_file(xml_path: Path, transform) -> bool:
     text = xml_path.read_text(encoding="utf-8")
-    new_text = add_dlc_entry(text, dlc_name)
+    new_text = transform(text)
     if new_text == text:
         return False
     backup = xml_path.with_suffix(xml_path.suffix + ".bak")
     if not backup.exists():
-        backup.write_text(text, encoding="utf-8")
+        backup.write_text(new_text, encoding="utf-8")
     xml_path.write_text(new_text, encoding="utf-8")
     return True

@@ -83,6 +83,36 @@ def install_dlc(
     return InstallResult(True, T("dlc_installed", name=pack.name), pack.name)
 
 
+def list_installed_dlcs(dlcpacks_dir: Path) -> list[str]:
+    """Return the names of installed DLC packs (folders containing dlc.rpf)."""
+    if not dlcpacks_dir.is_dir():
+        return []
+    try:
+        children = [c for c in dlcpacks_dir.iterdir() if c.is_dir()]
+    except OSError:
+        return []
+    return sorted(c.name for c in children if (c / "dlc.rpf").exists())
+
+
+def uninstall_dlc(name: str, dlcpacks_dir: Path, log: LogFn) -> InstallResult:
+    """Delete an installed DLC pack folder from `dlcpacks_dir`.
+
+    Only removes the files on disk; the GUI is responsible for also dropping
+    the matching `dlclist.xml` entry via `dlclist.remove_from_file`.
+    """
+    target = dlcpacks_dir / name
+    if not target.is_dir():
+        return InstallResult(False, T("dlc_not_installed", name=name), name)
+    log(T("dlc_removing", name=name))
+    try:
+        shutil.rmtree(target)
+    except OSError as exc:
+        return InstallResult(
+            False, T("dlc_remove_failed", name=name, err=str(exc)), name
+        )
+    return InstallResult(True, T("dlc_removed", name=name), name)
+
+
 def _looks_like_els_xml(path: Path) -> bool:
     if path.suffix.lower() != ".xml":
         return False

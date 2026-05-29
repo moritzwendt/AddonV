@@ -74,6 +74,6 @@ def _edit_file(xml_path: Path, transform) -> bool:
         return False
     backup = xml_path.with_suffix(xml_path.suffix + ".bak")
     if not backup.exists():
-        backup.write_text(new_text, encoding="utf-8")
+        backup.write_text(text, encoding="utf-8")
     xml_path.write_text(new_text, encoding="utf-8")
     return True

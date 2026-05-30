@@ -15,7 +15,6 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFileDialog,
     QFrame,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
     QListWidget,
@@ -38,6 +37,8 @@ from installers import (
     find_dlc_packs,
     install_dlc,
     install_els,
+    is_els_source,
+    list_els_xmls,
     list_installed_dlcs,
     uninstall_dlc,
 )
@@ -61,6 +62,44 @@ def _system_default_language() -> str:
     name = QLocale.system().name().lower()  # e.g. "de_de"
     code = name.split("_", 1)[0]
     return code if code in LANGUAGES else "en"
+
+
+class _ReplaceDecider:
+    """Per-item replace prompt that remembers a 'to all' choice.
+
+    Used while installing a batch (several DLC packs or ELS files): the first
+    conflict offers Yes / No / Yes to All / No to All. Picking a "to all"
+    button answers every remaining conflict in the batch without re-asking.
+    The "to all" buttons are only shown when `offer_all` is set (i.e. more
+    than one file is being installed) — for a single file they'd be pointless.
+    """
+
+    def __init__(self, parent, body_key: str, offer_all: bool = False) -> None:
+        self._parent = parent
+        self._body_key = body_key
+        self._offer_all = offer_all
+        self._all: bool | None = None  # None = keep asking
+
+    def __call__(self, name: str) -> bool:
+        if self._all is not None:
+            return self._all
+        buttons = QMessageBox.Yes | QMessageBox.No
+        if self._offer_all:
+            buttons |= QMessageBox.YesToAll | QMessageBox.NoToAll
+        reply = QMessageBox.question(
+            self._parent,
+            T("replace_title"),
+            T(self._body_key, name=name),
+            buttons,
+            QMessageBox.No,
+        )
+        if reply == QMessageBox.YesToAll:
+            self._all = True
+            return True
+        if reply == QMessageBox.NoToAll:
+            self._all = False
+            return False
+        return reply == QMessageBox.Yes
 
 
 class LanguageDialog(QDialog):
@@ -106,7 +145,11 @@ class LanguageDialog(QDialog):
 
 
 class DropZone(QFrame):
-    """A labelled drop target that calls back with each dropped path."""
+    """A labelled drop target that calls back with all dropped paths at once.
+
+    Passing the whole batch (rather than one path per call) lets the handler
+    apply a single "replace all / keep all" decision across everything dropped.
+    """
 
     BASE_STYLE = """
         QFrame {
@@ -159,14 +202,12 @@ class DropZone(QFrame):
 
     def dropEvent(self, event: QDropEvent) -> None:
         self.setStyleSheet(self.BASE_STYLE)
-        handled = 0
-        for url in event.mimeData().urls():
-            local = url.toLocalFile()
-            if local:
-                self._on_drop(Path(local))
-                handled += 1
-        if handled == 0:
-            self._on_drop(None)
+        paths = [
+            Path(local)
+            for url in event.mimeData().urls()
+            if (local := url.toLocalFile())
+        ]
+        self._on_drop(paths)
 
 
 class ManageModsDialog(QDialog):
@@ -303,14 +344,10 @@ class MainWindow(QMainWindow):
         mode_row.addWidget(self.mode_status)
         root_layout.addLayout(mode_row)
 
-        # --- Drop zones -------------------------------------------------
-        grid = QGridLayout()
-        grid.setSpacing(12)
-        self.zone_dlc = DropZone(T("dlc_zone_title"), T("dlc_zone_hint"), self.on_dlc_drop)
-        self.zone_els = DropZone(T("els_zone_title"), T("els_zone_hint"), self.on_els_drop)
-        grid.addWidget(self.zone_dlc, 0, 0)
-        grid.addWidget(self.zone_els, 0, 1)
-        root_layout.addLayout(grid)
+        # --- Drop zone --------------------------------------------------
+        # One box for everything: the app detects DLC vs ELS per dropped item.
+        self.zone = DropZone(T("drop_zone_title"), T("drop_zone_hint"), self.on_drop)
+        root_layout.addWidget(self.zone)
 
         # --- dlclist.xml row -------------------------------------------
         xml_row = QHBoxLayout()
@@ -379,8 +416,7 @@ class MainWindow(QMainWindow):
         self.manage_btn.setText(T("manage_btn"))
         self.lang_btn.setText(T("lang_button"))
         self.mods_checkbox.setText(T("mods_checkbox"))
-        self.zone_dlc.set_texts(T("dlc_zone_title"), T("dlc_zone_hint"))
-        self.zone_els.set_texts(T("els_zone_title"), T("els_zone_hint"))
+        self.zone.set_texts(T("drop_zone_title"), T("drop_zone_hint"))
         self.xml_btn.setText(T("dlclist_btn"))
         self.clear_xml_btn.setText(T("dlclist_clear_btn"))
         self._refresh_labels()
@@ -485,62 +521,66 @@ class MainWindow(QMainWindow):
         self.config.save()
         self._refresh_labels()
 
-    # ----- drop callbacks ----- #
-    def on_dlc_drop(self, src: Path | None) -> None:
-        if src is None:
+    # ----- drop callback ----- #
+    def on_drop(self, srcs: list[Path]) -> None:
+        if not srcs:
             self.log_msg("[!!] " + T("drop_nothing"))
             return
         paths = self._ensure_paths()
         if not paths:
             return
-        try:
+
+        # Classify everything first: detect DLC packs vs ELS files per dropped
+        # item so we know how many files of each kind there are. The "replace
+        # all / keep all" buttons are only offered when a kind has >1 file.
+        dlc_packs: list[Path] = []
+        els_srcs: list[Path] = []
+        unknown: list[Path] = []
+        for src in srcs:
             packs = find_dlc_packs(src)
-            if not packs:
-                self.log_msg("[!!] " + T("dlc_no_rpf", name=src.name))
-                return
-            for pack in packs:
-                result = install_dlc(pack, paths["dlcpacks"], self.log_msg)
-                if result.conflict:
-                    if not self._confirm_replace(T("dlc_replace_body", name=pack.name)):
-                        self.log_msg("[!!] " + T("dlc_kept", name=pack.name))
-                        continue
-                    result = install_dlc(
-                        pack, paths["dlcpacks"], self.log_msg, overwrite=True
-                    )
-                self.log_msg(("[OK] " if result.ok else "[!!] ") + result.message)
-                if result.ok and result.dlc_name:
-                    self._handle_dlclist_update(result.dlc_name)
-        except Exception as exc:  # last-resort net: never swallow a failure silently
-            self.log_msg("[!!] " + T("unexpected_error", err=str(exc)))
+            if packs:
+                dlc_packs.extend(packs)
+            elif is_els_source(src):
+                els_srcs.append(src)
+            else:
+                unknown.append(src)
 
-    def on_els_drop(self, src: Path | None) -> None:
-        if src is None:
-            self.log_msg("[!!] " + T("drop_nothing"))
-            return
-        paths = self._ensure_paths()
-        if not paths:
-            return
-        try:
-            target = paths["root"] / "ELS" / "pack_default"
-            result = install_els(src, target, self.log_msg)
-            if result.conflict:
-                if not self._confirm_replace(T("els_replace_body", name=src.name)):
-                    self.log_msg("[!!] " + T("els_kept", name=src.name))
-                    return
-                result = install_els(src, target, self.log_msg, overwrite=True)
-            self.log_msg(("[OK] " if result.ok else "[!!] ") + result.message)
-        except Exception as exc:  # last-resort net: never swallow a failure silently
-            self.log_msg("[!!] " + T("unexpected_error", err=str(exc)))
-
-    def _confirm_replace(self, body: str) -> bool:
-        reply = QMessageBox.question(
-            self,
-            T("replace_title"),
-            body,
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+        els_count = sum(len(list_els_xmls(s)) for s in els_srcs)
+        # One decider per kind so a "to all" choice carries across the drop.
+        dlc_decide = _ReplaceDecider(
+            self, "dlc_replace_body", offer_all=len(dlc_packs) > 1
         )
-        return reply == QMessageBox.Yes
+        els_decide = _ReplaceDecider(
+            self, "els_replace_body", offer_all=els_count > 1
+        )
+
+        for pack in dlc_packs:
+            try:
+                self._install_dlc_pack(pack, paths, dlc_decide)
+            except Exception as exc:  # never swallow a failure silently
+                self.log_msg("[!!] " + T("unexpected_error", err=str(exc)))
+        for src in els_srcs:
+            try:
+                target = paths["root"] / "ELS" / "pack_default"
+                result = install_els(src, target, self.log_msg, resolve=els_decide)
+                self.log_msg(("[OK] " if result.ok else "[!!] ") + result.message)
+            except Exception as exc:
+                self.log_msg("[!!] " + T("unexpected_error", err=str(exc)))
+        for src in unknown:
+            self.log_msg("[!!] " + T("drop_unknown", name=src.name))
+
+    def _install_dlc_pack(self, pack, paths, decide) -> None:
+        result = install_dlc(pack, paths["dlcpacks"], self.log_msg)
+        if result.conflict:
+            if not decide(pack.name):
+                self.log_msg("[!!] " + T("dlc_kept", name=pack.name))
+                return
+            result = install_dlc(
+                pack, paths["dlcpacks"], self.log_msg, overwrite=True
+            )
+        self.log_msg(("[OK] " if result.ok else "[!!] ") + result.message)
+        if result.ok and result.dlc_name:
+            self._handle_dlclist_update(result.dlc_name)
 
     # ----- dlclist.xml handling ----- #
     def _handle_dlclist_update(self, dlc_name: str) -> None:

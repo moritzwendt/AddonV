@@ -24,6 +24,11 @@ from i18n import T
 
 LogFn = Callable[[str], None]
 
+# Given the name of an item that already exists at the target, return True to
+# replace it or False to keep the existing one. Lets the caller (the GUI) ask
+# the user per item, with "yes/no to all" handled inside the resolver.
+ConflictResolver = Callable[[str], bool]
+
 
 @dataclass
 class InstallResult:
@@ -123,9 +128,46 @@ def _looks_like_els_xml(path: Path) -> bool:
     return "<vcfroot" in head or "<vcf " in head or "<elsteam" in head
 
 
+def list_els_xmls(src: Path) -> list[Path]:
+    """Return every ELS-VCF XML file reachable from `src` (file or folder)."""
+    if src.is_file():
+        return [src] if _looks_like_els_xml(src) else []
+    if src.is_dir():
+        try:
+            return [x for x in src.rglob("*.xml") if _looks_like_els_xml(x)]
+        except OSError:
+            return []
+    return []
+
+
+def is_els_source(src: Path) -> bool:
+    """True if `src` is an ELS-VCF XML file or a folder that contains one.
+
+    Lets the GUI auto-route a dropped path: anything that isn't a DLC pack
+    but looks like ELS goes to the ELS installer.
+    """
+    if src.is_file():
+        return _looks_like_els_xml(src)
+    if src.is_dir():
+        try:
+            return any(_looks_like_els_xml(x) for x in src.rglob("*.xml"))
+        except OSError:
+            return False
+    return False
+
+
 def install_els(
-    src: Path, els_vcfs_dir: Path, log: LogFn, overwrite: bool = False
+    src: Path,
+    els_vcfs_dir: Path,
+    log: LogFn,
+    resolve: Optional[ConflictResolver] = None,
 ) -> InstallResult:
+    """Install one or more ELS-VCF XML files into `els_vcfs_dir`.
+
+    For each file that already exists, `resolve(name)` decides whether to
+    replace it; when no resolver is given, existing files are kept. This lets
+    the GUI ask per file (with "yes/no to all") instead of all-or-nothing.
+    """
     if not src.exists():
         return InstallResult(False, T("els_src_missing", path=str(src)))
 
@@ -137,39 +179,27 @@ def install_els(
     if src.is_file():
         if not _looks_like_els_xml(src):
             return InstallResult(False, T("els_not_vcf", name=src.name))
-        target = els_vcfs_dir / src.name
-        if target.exists() and not overwrite:
-            return InstallResult(
-                False, T("els_file_exists", name=target.name), conflict=True
-            )
-        log(T("els_copying_file", name=src.name))
-        try:
-            shutil.copy2(src, target)
-        except OSError as exc:
-            return InstallResult(
-                False, T("els_copy_failed", name=src.name, err=str(exc))
-            )
-        return InstallResult(True, T("els_installed_file", name=src.name))
-
-    xmls = [x for x in src.rglob("*.xml") if _looks_like_els_xml(x)]
-    if not xmls:
-        return InstallResult(False, T("els_no_xmls"))
-
-    existing = [x for x in xmls if (els_vcfs_dir / x.name).exists()]
-    if existing and not overwrite:
-        return InstallResult(
-            False, T("els_some_exist", count=len(existing)), conflict=True
-        )
+        xmls = [src]
+    else:
+        xmls = [x for x in src.rglob("*.xml") if _looks_like_els_xml(x)]
+        if not xmls:
+            return InstallResult(False, T("els_no_xmls"))
 
     copied = 0
+    skipped = 0
     for x in xmls:
+        target = els_vcfs_dir / x.name
+        if target.exists() and not (resolve is not None and resolve(x.name)):
+            log(T("els_skipped", name=x.name))
+            skipped += 1
+            continue
         log(T("els_copying", name=x.name))
         try:
-            shutil.copy2(x, els_vcfs_dir / x.name)
+            shutil.copy2(x, target)
         except OSError as exc:
             return InstallResult(
                 False,
                 T("els_copy_failed_partial", name=x.name, err=str(exc), copied=copied),
             )
         copied += 1
-    return InstallResult(True, T("els_summary", copied=copied, skipped=0))
+    return InstallResult(True, T("els_summary", copied=copied, skipped=skipped))

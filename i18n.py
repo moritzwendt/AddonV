@@ -76,16 +76,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "mode_direct": "Mode: DIRECT — original files will be modified!",
 
         # drop zones
-        "dlc_zone_title": "DLC Mods",
-        "dlc_zone_hint": (
-            "Drag a folder containing dlc.rpf here.\n"
-            "Will be copied to mods/update/x64/dlcpacks\n"
-            "and registered in dlclist.xml."
+        "drop_zone_title": "Drop mods here",
+        "drop_zone_hint": (
+            "Drag DLC folders (with dlc.rpf) or ELS-VCF .xml files/folders here.\n"
+            "AddonV detects the type automatically:\n"
+            "DLC → mods/update/x64/dlcpacks (+ dlclist.xml) · ELS → ELS/pack_default."
         ),
-        "els_zone_title": "ELS Mods",
-        "els_zone_hint": (
-            "Drag ELS-VCF .xml files or folders here.\n"
-            "Will be copied to ELS/pack_default."
+        "drop_unknown": (
+            "Couldn't tell what '{name}' is — drop a DLC folder "
+            "(containing dlc.rpf) or ELS-VCF .xml file(s)."
         ),
 
         # dlclist row
@@ -200,16 +199,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "mode_safe": "Modus: sicher (mods/)",
         "mode_direct": "Modus: DIREKT — Originaldateien werden verändert!",
 
-        "dlc_zone_title": "DLC Mods",
-        "dlc_zone_hint": (
-            "Ordner mit dlc.rpf hier hineinziehen.\n"
-            "Wird nach mods/update/x64/dlcpacks kopiert\n"
-            "und in dlclist.xml eingetragen."
+        "drop_zone_title": "Mods hier ablegen",
+        "drop_zone_hint": (
+            "DLC-Ordner (mit dlc.rpf) oder ELS-VCF .xml-Dateien/-Ordner hier hineinziehen.\n"
+            "AddonV erkennt den Typ automatisch:\n"
+            "DLC → mods/update/x64/dlcpacks (+ dlclist.xml) · ELS → ELS/pack_default."
         ),
-        "els_zone_title": "ELS Mods",
-        "els_zone_hint": (
-            "ELS-VCF .xml-Dateien oder -Ordner hier hineinziehen.\n"
-            "Wird nach ELS/pack_default kopiert."
+        "drop_unknown": (
+            "Konnte '{name}' nicht zuordnen — bitte einen DLC-Ordner "
+            "(mit dlc.rpf) oder ELS-VCF .xml-Datei(en) ablegen."
         ),
 
         "dlclist_btn": "dlclist.xml wählen…",
@@ -316,16 +314,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "mode_safe": "Режим: безопасный (mods/)",
         "mode_direct": "Режим: ПРЯМОЙ — оригинальные файлы будут изменены!",
 
-        "dlc_zone_title": "DLC моды",
-        "dlc_zone_hint": (
-            "Перетащите сюда папку с dlc.rpf.\n"
-            "Будет скопирована в mods/update/x64/dlcpacks\n"
-            "и добавлена в dlclist.xml."
+        "drop_zone_title": "Перетащите моды сюда",
+        "drop_zone_hint": (
+            "Перетащите сюда папки DLC (с dlc.rpf) или ELS-VCF .xml-файлы/папки.\n"
+            "AddonV определяет тип автоматически:\n"
+            "DLC → mods/update/x64/dlcpacks (+ dlclist.xml) · ELS → ELS/pack_default."
         ),
-        "els_zone_title": "ELS моды",
-        "els_zone_hint": (
-            "Перетащите сюда ELS-VCF .xml-файлы или папки.\n"
-            "Будут скопированы в ELS/pack_default."
+        "drop_unknown": (
+            "Не удалось определить, что такое '{name}' — перетащите папку DLC "
+            "(с dlc.rpf) или ELS-VCF .xml-файл(ы)."
         ),
 
         "dlclist_btn": "Выбрать dlclist.xml…",
@@ -432,16 +429,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "mode_safe": "Modo: seguro (mods/)",
         "mode_direct": "Modo: DIRECTO — ¡los archivos originales serán modificados!",
 
-        "dlc_zone_title": "Mods DLC",
-        "dlc_zone_hint": (
-            "Arrastra aquí una carpeta con dlc.rpf.\n"
-            "Se copiará a mods/update/x64/dlcpacks\n"
-            "y se registrará en dlclist.xml."
+        "drop_zone_title": "Suelta los mods aquí",
+        "drop_zone_hint": (
+            "Arrastra aquí carpetas DLC (con dlc.rpf) o archivos/carpetas ELS-VCF .xml.\n"
+            "AddonV detecta el tipo automáticamente:\n"
+            "DLC → mods/update/x64/dlcpacks (+ dlclist.xml) · ELS → ELS/pack_default."
         ),
-        "els_zone_title": "Mods ELS",
-        "els_zone_hint": (
-            "Arrastra aquí archivos ELS-VCF .xml o carpetas.\n"
-            "Se copiarán a ELS/pack_default."
+        "drop_unknown": (
+            "No se pudo identificar '{name}' — arrastra una carpeta DLC "
+            "(con dlc.rpf) o archivo(s) ELS-VCF .xml."
         ),
 
         "dlclist_btn": "Elegir dlclist.xml…",

@@ -98,11 +98,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "gta_not_detected": "Note: GTA path not detected automatically — please choose above.",
         "gta_path_set": "GTA path set: {path}",
         "dlclist_set": "dlclist.xml set: {path}",
-        "direct_enabled": "[!!] Direct installation enabled — original files will be modified.",
-        "safe_enabled": "[OK] Safe installation enabled (mods/ subfolder).",
-        "dlclist_added": "[OK] dlclist.xml: entry for '{name}' added.",
-        "dlclist_existed": "[OK] dlclist.xml: entry for '{name}' already present.",
-        "dlclist_error": "[!!] Error editing dlclist.xml: {err}",
+        "direct_enabled": "Direct installation enabled — original files will be modified.",
+        "safe_enabled": "Safe installation enabled (mods/ subfolder).",
+        "dlclist_added": "dlclist.xml: entry for '{name}' added.",
+        "dlclist_existed": "dlclist.xml: entry for '{name}' already present.",
+        "dlclist_error": "Error editing dlclist.xml: {err}",
         "dlclist_hint_no_xml": (
             "Note: no extracted dlclist.xml configured.\n"
             "  Please add the following entry to update.rpf/common/data/dlclist.xml\n"
@@ -130,10 +130,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         ),
 
         # installer messages (DLC)
-        "dlc_no_rpf": "No 'dlc.rpf' found in '{name}' — likely not a DLC mod.",
-        "dlc_exists": "DLC '{name}' already exists in {dir}.",
-        "dlc_copying": "Copying DLC '{name}' to {dir}…",
-        "dlc_installed": "DLC '{name}' installed.",
+        "dlc_exists": "DLC '{name}' already exists.",
+        "dlc_installing": "Installing DLC '{name}'…",
+        "dlc_installed": "DLC '{name}' installed ({size}).",
         "dlc_copy_failed": (
             "Could not install DLC '{name}': {err}\n"
             "  (Tip: installing into Program Files may require running AddonV as administrator.)"
@@ -142,16 +141,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         # installer messages (ELS)
         "els_src_missing": "Source does not exist: {path}",
         "els_not_vcf": "'{name}' doesn't look like an ELS-VCF file.",
-        "els_file_exists": "File already exists: {name}",
-        "els_copying_file": "Copying ELS file '{name}'…",
-        "els_installed_file": "ELS file '{name}' installed.",
         "els_no_xmls": "No ELS-VCF XML files found.",
-        "els_some_exist": "{count} ELS file(s) already exist in the target folder.",
         "els_copy_failed": "Could not install ELS '{name}': {err}",
         "els_copy_failed_partial": "Stopped after {copied} file(s): could not copy '{name}': {err}",
-        "els_skipped": "  skipped (exists): {name}",
-        "els_copying": "  copying {name}",
-        "els_summary": "ELS: {copied} copied, {skipped} skipped.",
+        "els_summary": "ELS — {copied} file(s) installed, {skipped} kept.",
 
         # generic errors
         "drop_nothing": "Nothing usable was dropped (only files and folders are supported).",
@@ -219,11 +212,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "gta_not_detected": "Hinweis: GTA-Pfad nicht automatisch erkannt — bitte oben wählen.",
         "gta_path_set": "GTA-Pfad gesetzt: {path}",
         "dlclist_set": "dlclist.xml gesetzt: {path}",
-        "direct_enabled": "[!!] Direktinstallation aktiviert — Originaldateien werden verändert.",
-        "safe_enabled": "[OK] Sichere Installation aktiviert (mods/-Unterordner).",
-        "dlclist_added": "[OK] dlclist.xml: Eintrag für '{name}' hinzugefügt.",
-        "dlclist_existed": "[OK] dlclist.xml: Eintrag für '{name}' war bereits vorhanden.",
-        "dlclist_error": "[!!] Fehler beim Bearbeiten von dlclist.xml: {err}",
+        "direct_enabled": "Direktinstallation aktiviert — Originaldateien werden verändert.",
+        "safe_enabled": "Sichere Installation aktiviert (mods/-Unterordner).",
+        "dlclist_added": "dlclist.xml: Eintrag für '{name}' hinzugefügt.",
+        "dlclist_existed": "dlclist.xml: Eintrag für '{name}' war bereits vorhanden.",
+        "dlclist_error": "Fehler beim Bearbeiten von dlclist.xml: {err}",
         "dlclist_hint_no_xml": (
             "Hinweis: keine extrahierte dlclist.xml konfiguriert.\n"
             "  Bitte folgenden Eintrag in update.rpf/common/data/dlclist.xml\n"
@@ -249,10 +242,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Trotzdem direkt in den GTA-Hauptordner installieren?"
         ),
 
-        "dlc_no_rpf": "Kein 'dlc.rpf' in '{name}' gefunden — vermutlich keine DLC-Mod.",
-        "dlc_exists": "DLC '{name}' existiert bereits unter {dir}.",
-        "dlc_copying": "Kopiere DLC '{name}' nach {dir}…",
-        "dlc_installed": "DLC '{name}' installiert.",
+        "dlc_exists": "DLC '{name}' existiert bereits.",
+        "dlc_installing": "Installiere DLC '{name}'…",
+        "dlc_installed": "DLC '{name}' installiert ({size}).",
         "dlc_copy_failed": (
             "DLC '{name}' konnte nicht installiert werden: {err}\n"
             "  (Tipp: Für die Installation in Program Files muss AddonV evtl. als Administrator laufen.)"
@@ -260,16 +252,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "els_src_missing": "Quelle existiert nicht: {path}",
         "els_not_vcf": "'{name}' sieht nicht nach einer ELS-VCF-Datei aus.",
-        "els_file_exists": "Datei existiert bereits: {name}",
-        "els_copying_file": "Kopiere ELS-Datei '{name}'…",
-        "els_installed_file": "ELS-Datei '{name}' installiert.",
         "els_no_xmls": "Keine ELS-VCF-XML-Dateien gefunden.",
-        "els_some_exist": "{count} ELS-Datei(en) existieren bereits im Zielordner.",
         "els_copy_failed": "ELS '{name}' konnte nicht installiert werden: {err}",
         "els_copy_failed_partial": "Nach {copied} Datei(en) abgebrochen: '{name}' konnte nicht kopiert werden: {err}",
-        "els_skipped": "  übersprungen (existiert): {name}",
-        "els_copying": "  kopiere {name}",
-        "els_summary": "ELS: {copied} kopiert, {skipped} übersprungen.",
+        "els_summary": "ELS — {copied} Datei(en) installiert, {skipped} behalten.",
 
         "drop_nothing": "Nichts Verwertbares abgelegt (nur Dateien und Ordner werden unterstützt).",
         "unexpected_error": "Unerwarteter Fehler: {err}",
@@ -334,11 +320,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "gta_not_detected": "Примечание: путь к GTA не определён автоматически — выберите выше.",
         "gta_path_set": "Путь к GTA задан: {path}",
         "dlclist_set": "dlclist.xml задан: {path}",
-        "direct_enabled": "[!!] Прямая установка включена — оригинальные файлы будут изменены.",
-        "safe_enabled": "[OK] Безопасная установка включена (подпапка mods/).",
-        "dlclist_added": "[OK] dlclist.xml: запись для '{name}' добавлена.",
-        "dlclist_existed": "[OK] dlclist.xml: запись для '{name}' уже существует.",
-        "dlclist_error": "[!!] Ошибка при правке dlclist.xml: {err}",
+        "direct_enabled": "Прямая установка включена — оригинальные файлы будут изменены.",
+        "safe_enabled": "Безопасная установка включена (подпапка mods/).",
+        "dlclist_added": "dlclist.xml: запись для '{name}' добавлена.",
+        "dlclist_existed": "dlclist.xml: запись для '{name}' уже существует.",
+        "dlclist_error": "Ошибка при правке dlclist.xml: {err}",
         "dlclist_hint_no_xml": (
             "Примечание: извлечённый dlclist.xml не настроен.\n"
             "  Пожалуйста, добавьте следующую запись в update.rpf/common/data/dlclist.xml\n"
@@ -364,10 +350,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Всё равно установить прямо в основную папку GTA?"
         ),
 
-        "dlc_no_rpf": "В '{name}' не найден 'dlc.rpf' — вероятно, это не DLC-мод.",
-        "dlc_exists": "DLC '{name}' уже существует в {dir}.",
-        "dlc_copying": "Копирую DLC '{name}' в {dir}…",
-        "dlc_installed": "DLC '{name}' установлен.",
+        "dlc_exists": "DLC '{name}' уже существует.",
+        "dlc_installing": "Устанавливаю DLC '{name}'…",
+        "dlc_installed": "DLC '{name}' установлен ({size}).",
         "dlc_copy_failed": (
             "Не удалось установить DLC '{name}': {err}\n"
             "  (Совет: для установки в Program Files может потребоваться запуск AddonV от имени администратора.)"
@@ -375,16 +360,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "els_src_missing": "Источник не существует: {path}",
         "els_not_vcf": "'{name}' не похож на ELS-VCF файл.",
-        "els_file_exists": "Файл уже существует: {name}",
-        "els_copying_file": "Копирую ELS-файл '{name}'…",
-        "els_installed_file": "ELS-файл '{name}' установлен.",
         "els_no_xmls": "ELS-VCF XML-файлы не найдены.",
-        "els_some_exist": "{count} ELS-файл(ов) уже существуют в целевой папке.",
         "els_copy_failed": "Не удалось установить ELS '{name}': {err}",
         "els_copy_failed_partial": "Остановлено после {copied} файл(ов): не удалось скопировать '{name}': {err}",
-        "els_skipped": "  пропущен (существует): {name}",
-        "els_copying": "  копирую {name}",
-        "els_summary": "ELS: {copied} скопировано, {skipped} пропущено.",
+        "els_summary": "ELS — установлено файлов: {copied}, сохранено: {skipped}.",
 
         "drop_nothing": "Не перетащено ничего подходящего (поддерживаются только файлы и папки).",
         "unexpected_error": "Непредвиденная ошибка: {err}",
@@ -449,11 +428,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "gta_not_detected": "Aviso: la ruta de GTA no se detectó automáticamente — elige arriba.",
         "gta_path_set": "Ruta de GTA establecida: {path}",
         "dlclist_set": "dlclist.xml establecido: {path}",
-        "direct_enabled": "[!!] Instalación directa activada — los archivos originales serán modificados.",
-        "safe_enabled": "[OK] Instalación segura activada (subcarpeta mods/).",
-        "dlclist_added": "[OK] dlclist.xml: entrada para '{name}' añadida.",
-        "dlclist_existed": "[OK] dlclist.xml: la entrada para '{name}' ya existía.",
-        "dlclist_error": "[!!] Error al editar dlclist.xml: {err}",
+        "direct_enabled": "Instalación directa activada — los archivos originales serán modificados.",
+        "safe_enabled": "Instalación segura activada (subcarpeta mods/).",
+        "dlclist_added": "dlclist.xml: entrada para '{name}' añadida.",
+        "dlclist_existed": "dlclist.xml: la entrada para '{name}' ya existía.",
+        "dlclist_error": "Error al editar dlclist.xml: {err}",
         "dlclist_hint_no_xml": (
             "Aviso: no hay dlclist.xml extraído configurado.\n"
             "  Añade la siguiente entrada en update.rpf/common/data/dlclist.xml\n"
@@ -479,10 +458,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "¿Instalar de todas formas directamente en la carpeta principal de GTA?"
         ),
 
-        "dlc_no_rpf": "No se encontró 'dlc.rpf' en '{name}' — probablemente no es un mod DLC.",
-        "dlc_exists": "El DLC '{name}' ya existe en {dir}.",
-        "dlc_copying": "Copiando DLC '{name}' a {dir}…",
-        "dlc_installed": "DLC '{name}' instalado.",
+        "dlc_exists": "El DLC '{name}' ya existe.",
+        "dlc_installing": "Instalando DLC '{name}'…",
+        "dlc_installed": "DLC '{name}' instalado ({size}).",
         "dlc_copy_failed": (
             "No se pudo instalar el DLC '{name}': {err}\n"
             "  (Consejo: instalar en Program Files puede requerir ejecutar AddonV como administrador.)"
@@ -490,16 +468,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "els_src_missing": "La fuente no existe: {path}",
         "els_not_vcf": "'{name}' no parece un archivo ELS-VCF.",
-        "els_file_exists": "El archivo ya existe: {name}",
-        "els_copying_file": "Copiando archivo ELS '{name}'…",
-        "els_installed_file": "Archivo ELS '{name}' instalado.",
         "els_no_xmls": "No se encontraron archivos XML ELS-VCF.",
-        "els_some_exist": "{count} archivo(s) ELS ya existen en la carpeta de destino.",
         "els_copy_failed": "No se pudo instalar ELS '{name}': {err}",
         "els_copy_failed_partial": "Detenido tras {copied} archivo(s): no se pudo copiar '{name}': {err}",
-        "els_skipped": "  omitido (existe): {name}",
-        "els_copying": "  copiando {name}",
-        "els_summary": "ELS: {copied} copiados, {skipped} omitidos.",
+        "els_summary": "ELS — {copied} archivo(s) instalados, {skipped} conservados.",
 
         "drop_nothing": "No se soltó nada utilizable (solo se admiten archivos y carpetas).",
         "unexpected_error": "Error inesperado: {err}",

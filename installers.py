@@ -29,6 +29,13 @@ LogFn = Callable[[str], None]
 # the user per item, with "yes/no to all" handled inside the resolver.
 ConflictResolver = Callable[[str], bool]
 
+# Reports copy progress: (bytes_done, bytes_total, current_file_name). Called
+# repeatedly during a copy so the GUI can animate a progress bar and keep the
+# event loop alive. Receiving a total of 0 means "nothing to copy".
+ProgressFn = Callable[[int, int, str], None]
+
+_CHUNK = 4 * 1024 * 1024  # 4 MiB copy block — small enough to keep the UI live
+
 
 @dataclass
 class InstallResult:
@@ -36,6 +43,50 @@ class InstallResult:
     message: str
     dlc_name: str = ""
     conflict: bool = False
+
+
+def _iter_files(root: Path) -> list[Path]:
+    """All files under `root`, recursively (no directories)."""
+    return [p for p in root.rglob("*") if p.is_file()]
+
+
+def _human_size(num: int) -> str:
+    """Format a byte count compactly, e.g. 1536 -> '1.5 KB'."""
+    size = float(num)
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if size < 1024 or unit == "TB":
+            return f"{int(size)} {unit}" if unit == "B" else f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} TB"
+
+
+def _copy_file(
+    src: Path,
+    dst: Path,
+    done: int,
+    total: int,
+    progress: Optional[ProgressFn],
+) -> int:
+    """Copy `src` to `dst` in chunks, reporting cumulative progress.
+
+    `done` is the byte count copied before this file; returns the new
+    cumulative count afterwards. Copying in chunks (rather than one big
+    `copy2`) lets the caller pump its event loop between blocks so even a
+    single huge file doesn't freeze the UI.
+    """
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    name = src.name
+    with open(src, "rb") as fsrc, open(dst, "wb") as fdst:
+        while True:
+            chunk = fsrc.read(_CHUNK)
+            if not chunk:
+                break
+            fdst.write(chunk)
+            done += len(chunk)
+            if progress is not None:
+                progress(done, total, name)
+    shutil.copymode(src, dst)
+    return done
 
 
 def find_dlc_packs(src: Path) -> list[Path]:
@@ -58,11 +109,17 @@ def find_dlc_packs(src: Path) -> list[Path]:
 
 
 def install_dlc(
-    pack: Path, dlcpacks_dir: Path, log: LogFn, overwrite: bool = False
+    pack: Path,
+    dlcpacks_dir: Path,
+    log: LogFn,
+    overwrite: bool = False,
+    progress: Optional[ProgressFn] = None,
 ) -> InstallResult:
     """Install a single, already-resolved DLC pack folder.
 
     Use `find_dlc_packs` first to turn a dropped path into pack folders.
+    Copies file-by-file (reporting `progress`) instead of one opaque
+    `copytree`, so the GUI can show a live progress bar.
     """
     target = dlcpacks_dir / pack.name
     if target.exists() and not overwrite:
@@ -72,12 +129,19 @@ def install_dlc(
             pack.name,
             conflict=True,
         )
-    log(T("dlc_copying", name=pack.name, dir=str(dlcpacks_dir)))
+    log(T("dlc_installing", name=pack.name))
     try:
+        files = _iter_files(pack)
+        total = sum(f.stat().st_size for f in files)
         target.parent.mkdir(parents=True, exist_ok=True)
         if target.exists():
             shutil.rmtree(target)
-        shutil.copytree(pack, target)
+        done = 0
+        if progress is not None:
+            progress(0, total, pack.name)
+        for f in files:
+            rel = f.relative_to(pack)
+            done = _copy_file(f, target / rel, done, total, progress)
     except OSError as exc:
         # Clean up a half-copied folder so it isn't mistaken for a good install.
         if target.exists():
@@ -85,7 +149,9 @@ def install_dlc(
         return InstallResult(
             False, T("dlc_copy_failed", name=pack.name, err=str(exc)), pack.name
         )
-    return InstallResult(True, T("dlc_installed", name=pack.name), pack.name)
+    return InstallResult(
+        True, T("dlc_installed", name=pack.name, size=_human_size(total)), pack.name
+    )
 
 
 def list_installed_dlcs(dlcpacks_dir: Path) -> list[str]:
@@ -161,12 +227,13 @@ def install_els(
     els_vcfs_dir: Path,
     log: LogFn,
     resolve: Optional[ConflictResolver] = None,
+    progress: Optional[ProgressFn] = None,
 ) -> InstallResult:
     """Install one or more ELS-VCF XML files into `els_vcfs_dir`.
 
-    For each file that already exists, `resolve(name)` decides whether to
-    replace it; when no resolver is given, existing files are kept. This lets
-    the GUI ask per file (with "yes/no to all") instead of all-or-nothing.
+    Conflicts are resolved up front (via `resolve(name)`, with "yes/no to all"
+    handled inside the resolver); files the user keeps are skipped. The
+    remaining files are then copied while reporting `progress`.
     """
     if not src.exists():
         return InstallResult(False, T("els_src_missing", path=str(src)))
@@ -185,21 +252,34 @@ def install_els(
         if not xmls:
             return InstallResult(False, T("els_no_xmls"))
 
-    copied = 0
+    # Decide everything first, then copy — keeps the byte total exact and the
+    # progress bar smooth (no dialogs interrupting the copy phase).
+    to_copy = []
     skipped = 0
     for x in xmls:
         target = els_vcfs_dir / x.name
         if target.exists() and not (resolve is not None and resolve(x.name)):
-            log(T("els_skipped", name=x.name))
             skipped += 1
             continue
-        log(T("els_copying", name=x.name))
+        to_copy.append(x)
+
+    total = sum(x.stat().st_size for x in to_copy)
+    done = 0
+    if progress is not None:
+        progress(0, total, src.name)
+    for x in to_copy:
         try:
-            shutil.copy2(x, target)
+            done = _copy_file(x, els_vcfs_dir / x.name, done, total, progress)
         except OSError as exc:
             return InstallResult(
                 False,
-                T("els_copy_failed_partial", name=x.name, err=str(exc), copied=copied),
+                T(
+                    "els_copy_failed_partial",
+                    name=x.name,
+                    err=str(exc),
+                    copied=to_copy.index(x),
+                ),
             )
-        copied += 1
-    return InstallResult(True, T("els_summary", copied=copied, skipped=skipped))
+    return InstallResult(
+        True, T("els_summary", copied=len(to_copy), skipped=skipped)
+    )

@@ -1,4 +1,4 @@
-; AddonV installer — Inno Setup script
+                                                                                  ; AddonV installer — Inno Setup script
 ;
 ; Build flow:
 ;   1. PyInstaller builds dist/AddonV/  (onedir, windowed)

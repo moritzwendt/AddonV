@@ -1,12 +1,21 @@
 """Main GUI window built with PySide6."""
 from __future__ import annotations
 
+import html
 import os
 import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QLocale
-from PySide6.QtGui import QDragEnterEvent, QDropEvent, QIcon, QPalette, QColor, QPixmap
+from PySide6.QtGui import (
+    QDragEnterEvent,
+    QDropEvent,
+    QIcon,
+    QPalette,
+    QColor,
+    QPixmap,
+    QTextCursor,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
@@ -21,9 +30,9 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMainWindow,
     QMessageBox,
-    QPlainTextEdit,
     QPushButton,
     QRadioButton,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -42,6 +51,24 @@ from installers import (
     list_installed_dlcs,
     uninstall_dlc,
 )
+
+
+# Log line styling. Each message starts with a coloured group tag ([DLC],
+# [ELS], [XML] = dlclist.xml, [INFO]) and a status glyph.
+_GROUP_COLORS = {
+    "DLC": "#4aa3ff",   # blue
+    "ELS": "#46c46a",   # green
+    "XML": "#e0a030",   # orange
+    "INFO": "#9aa0a6",  # grey
+}
+_STATUS = {
+    "ok":   ("✓", "#46c46a"),  # check, green
+    "err":  ("✗", "#e05545"),  # cross, red
+    "work": ("→", "#9aa0a6"),  # arrow, grey
+    "info": ("",       "#9aa0a6"),  # no glyph
+}
+_TEXT_COLOR = "#dddddd"
+_PROGRESS_WIDTH = 24  # characters in the ASCII progress bar
 
 
 def _asset_path(name: str) -> str:
@@ -217,11 +244,11 @@ class ManageModsDialog(QDialog):
     is configured, drops the matching `<Item>` entry too.
     """
 
-    def __init__(self, dlcpacks_dir: Path, dlclist_xml: str, log, parent=None):
+    def __init__(self, dlcpacks_dir: Path, dlclist_xml: str, log_line, parent=None):
         super().__init__(parent)
         self._dlcpacks_dir = dlcpacks_dir
         self._dlclist_xml = dlclist_xml
-        self._log = log
+        self._log_line = log_line  # (group, status, text) -> None
 
         self.setWindowTitle(T("manage_dialog_title"))
         self.setModal(True)
@@ -280,14 +307,15 @@ class ManageModsDialog(QDialog):
         if reply != QMessageBox.Yes:
             return
 
-        result = uninstall_dlc(name, self._dlcpacks_dir, self._log)
-        self._log(("[OK] " if result.ok else "[!!] ") + result.message)
+        dlc_log = lambda msg: self._log_line("DLC", "work", msg)
+        result = uninstall_dlc(name, self._dlcpacks_dir, dlc_log)
+        self._log_line("DLC", "ok" if result.ok else "err", result.message)
         if result.ok and self._dlclist_xml and Path(self._dlclist_xml).is_file():
             try:
                 if dlclist.remove_from_file(Path(self._dlclist_xml), name):
-                    self._log(T("dlclist_entry_removed", name=name))
+                    self._log_line("XML", "ok", T("dlclist_entry_removed", name=name))
             except Exception as exc:
-                self._log(T("dlclist_error", err=str(exc)))
+                self._log_line("XML", "err", T("dlclist_error", err=str(exc)))
         self._refresh()
 
 
@@ -363,13 +391,15 @@ class MainWindow(QMainWindow):
         root_layout.addLayout(xml_row)
 
         # --- Log --------------------------------------------------------
-        self.log = QPlainTextEdit()
+        self.log = QTextEdit()
         self.log.setReadOnly(True)
         self.log.setStyleSheet(
             "background-color: #181818; color: #ddd; "
             "font-family: Consolas, 'Courier New', monospace; font-size: 12px;"
         )
         root_layout.addWidget(self.log, stretch=1)
+        self._progress_on = False  # is the last log line a live progress bar?
+        self._busy = False  # an install is running (drops are blocked)
 
         self._apply_dark_palette()
         self.retranslate_ui()
@@ -406,7 +436,7 @@ class MainWindow(QMainWindow):
         if not paths:
             return
         dlg = ManageModsDialog(
-            paths["dlcpacks"], self.config.dlclist_xml_path, self.log_msg, parent=self
+            paths["dlcpacks"], self.config.dlclist_xml_path, self.log_line, parent=self
         )
         dlg.exec()
 
@@ -456,12 +486,87 @@ class MainWindow(QMainWindow):
             self.config.gta_path = str(default)
             self.config.save()
             self._refresh_labels()
-            self.log_msg(T("gta_detected", path=str(default)))
+            self.log_line("INFO", "ok", T("gta_detected", path=str(default)))
         else:
-            self.log_msg(T("gta_not_detected"))
+            self.log_line("INFO", "info", T("gta_not_detected"))
+
+    # ----- logging ----- #
+    def log_line(self, group: str, status: str, text: str) -> None:
+        """Append a coloured `[GROUP] <glyph> text` line to the log."""
+        self._clear_progress()
+        glyph, scolor = _STATUS.get(status, _STATUS["info"])
+        gcolor = _GROUP_COLORS.get(group, _GROUP_COLORS["INFO"])
+        parts = [f'<span style="color:{gcolor}">[{group}]</span>']
+        if glyph:
+            parts.append(f'<span style="color:{scolor}">{glyph}</span>')
+        parts.append(
+            f'<span style="color:{_TEXT_COLOR}">{html.escape(text)}</span>'
+        )
+        self._append_html(" ".join(parts))
 
     def log_msg(self, msg: str) -> None:
-        self.log.appendPlainText(msg)
+        """Backwards-compatible plain logger (treated as an INFO line)."""
+        self.log_line("INFO", "info", msg)
+
+    def _group_logger(self, group: str):
+        """A single-arg `LogFn` that logs into `group` as a progress/work line.
+
+        Used for the installers' internal `log(text)` calls, which don't know
+        about groups or status.
+        """
+        return lambda msg: self.log_line(group, "work", msg)
+
+    def _append_html(self, line_html: str) -> None:
+        cur = self.log.textCursor()
+        cur.movePosition(QTextCursor.MoveOperation.End)
+        if not self.log.document().isEmpty():
+            cur.insertBlock()
+        cur.insertHtml(line_html)
+        self.log.setTextCursor(cur)
+        self.log.ensureCursorVisible()
+
+    # ----- progress bar (lives as the last log line) ----- #
+    def _show_progress(self, group: str, done: int, total: int, label: str) -> None:
+        frac = 1.0 if total <= 0 else max(0.0, min(1.0, done / total))
+        filled = round(frac * _PROGRESS_WIDTH)
+        bar = "█" * filled + "░" * (_PROGRESS_WIDTH - filled)
+        gcolor = _GROUP_COLORS.get(group, _GROUP_COLORS["INFO"])
+        text = f"[{bar}] {int(frac * 100):3d}%"
+        if label:
+            text += f"  {label}"
+        line_html = (
+            f'<span style="color:{gcolor}">[{group}]</span> '
+            f'<span style="color:{_TEXT_COLOR}">{html.escape(text)}</span>'
+        )
+        cur = self.log.textCursor()
+        cur.movePosition(QTextCursor.MoveOperation.End)
+        if self._progress_on:
+            # Replace the existing bar line in place.
+            cur.movePosition(
+                QTextCursor.MoveOperation.StartOfBlock,
+                QTextCursor.MoveMode.KeepAnchor,
+            )
+            cur.removeSelectedText()
+        else:
+            if not self.log.document().isEmpty():
+                cur.insertBlock()
+            self._progress_on = True
+        cur.insertHtml(line_html)
+        self.log.setTextCursor(cur)
+        self.log.ensureCursorVisible()
+        QApplication.processEvents()
+
+    def _clear_progress(self) -> None:
+        if not self._progress_on:
+            return
+        cur = self.log.textCursor()
+        cur.movePosition(QTextCursor.MoveOperation.End)
+        cur.movePosition(
+            QTextCursor.MoveOperation.StartOfBlock, QTextCursor.MoveMode.KeepAnchor
+        )
+        cur.removeSelectedText()
+        cur.deletePreviousChar()  # drop the now-empty line's separator
+        self._progress_on = False
 
     def _ensure_paths(self):
         gta = self.config.gta_path
@@ -482,7 +587,7 @@ class MainWindow(QMainWindow):
         self.config.gta_path = str(path)
         self.config.save()
         self._refresh_labels()
-        self.log_msg(T("gta_path_set", path=str(path)))
+        self.log_line("INFO", "ok", T("gta_path_set", path=str(path)))
 
     def choose_dlclist_xml(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -493,7 +598,7 @@ class MainWindow(QMainWindow):
         self.config.dlclist_xml_path = path
         self.config.save()
         self._refresh_labels()
-        self.log_msg(T("dlclist_set", path=path))
+        self.log_line("XML", "ok", T("dlclist_set", path=path))
 
     def clear_dlclist_xml(self) -> None:
         self.config.dlclist_xml_path = ""
@@ -514,17 +619,19 @@ class MainWindow(QMainWindow):
                 self.mods_checkbox.setChecked(True)
                 self.mods_checkbox.blockSignals(False)
                 return
-            self.log_msg(T("direct_enabled"))
+            self.log_line("INFO", "info", T("direct_enabled"))
         else:
-            self.log_msg(T("safe_enabled"))
+            self.log_line("INFO", "info", T("safe_enabled"))
         self.config.use_mods_folder = checked
         self.config.save()
         self._refresh_labels()
 
     # ----- drop callback ----- #
     def on_drop(self, srcs: list[Path]) -> None:
+        if self._busy:  # an install is already running (event loop is pumped)
+            return
         if not srcs:
-            self.log_msg("[!!] " + T("drop_nothing"))
+            self.log_line("INFO", "err", T("drop_nothing"))
             return
         paths = self._ensure_paths()
         if not paths:
@@ -554,33 +661,63 @@ class MainWindow(QMainWindow):
             self, "els_replace_body", offer_all=els_count > 1
         )
 
-        for pack in dlc_packs:
-            try:
-                self._install_dlc_pack(pack, paths, dlc_decide)
-            except Exception as exc:  # never swallow a failure silently
-                self.log_msg("[!!] " + T("unexpected_error", err=str(exc)))
-        for src in els_srcs:
-            try:
-                target = paths["root"] / "ELS" / "pack_default"
-                result = install_els(src, target, self.log_msg, resolve=els_decide)
-                self.log_msg(("[OK] " if result.ok else "[!!] ") + result.message)
-            except Exception as exc:
-                self.log_msg("[!!] " + T("unexpected_error", err=str(exc)))
-        for src in unknown:
-            self.log_msg("[!!] " + T("drop_unknown", name=src.name))
+        self._set_busy(True)
+        try:
+            for pack in dlc_packs:
+                try:
+                    self._install_dlc_pack(pack, paths, dlc_decide)
+                except Exception as exc:  # never swallow a failure silently
+                    self.log_line("DLC", "err", T("unexpected_error", err=str(exc)))
+            for src in els_srcs:
+                try:
+                    self._install_els_src(src, paths, els_decide)
+                except Exception as exc:
+                    self.log_line("ELS", "err", T("unexpected_error", err=str(exc)))
+            for src in unknown:
+                self.log_line("INFO", "err", T("drop_unknown", name=src.name))
+        finally:
+            self._set_busy(False)
+
+    def _set_busy(self, busy: bool) -> None:
+        """Block further input while a copy runs (the event loop is pumped)."""
+        self._busy = busy
+        self.zone.setAcceptDrops(not busy)
+        for w in (
+            self.zone,
+            self.choose_btn,
+            self.manage_btn,
+            self.lang_btn,
+            self.mods_checkbox,
+            self.xml_btn,
+            self.clear_xml_btn,
+        ):
+            w.setEnabled(not busy)
 
     def _install_dlc_pack(self, pack, paths, decide) -> None:
-        result = install_dlc(pack, paths["dlcpacks"], self.log_msg)
+        log = self._group_logger("DLC")
+        progress = lambda done, total, name: self._show_progress(
+            "DLC", done, total, name
+        )
+        result = install_dlc(pack, paths["dlcpacks"], log, progress=progress)
         if result.conflict:
             if not decide(pack.name):
-                self.log_msg("[!!] " + T("dlc_kept", name=pack.name))
+                self.log_line("DLC", "info", T("dlc_kept", name=pack.name))
                 return
             result = install_dlc(
-                pack, paths["dlcpacks"], self.log_msg, overwrite=True
+                pack, paths["dlcpacks"], log, overwrite=True, progress=progress
             )
-        self.log_msg(("[OK] " if result.ok else "[!!] ") + result.message)
+        self.log_line("DLC", "ok" if result.ok else "err", result.message)
         if result.ok and result.dlc_name:
             self._handle_dlclist_update(result.dlc_name)
+
+    def _install_els_src(self, src, paths, decide) -> None:
+        log = self._group_logger("ELS")
+        progress = lambda done, total, name: self._show_progress(
+            "ELS", done, total, name
+        )
+        target = paths["root"] / "ELS" / "pack_default"
+        result = install_els(src, target, log, resolve=decide, progress=progress)
+        self.log_line("ELS", "ok" if result.ok else "err", result.message)
 
     # ----- dlclist.xml handling ----- #
     def _handle_dlclist_update(self, dlc_name: str) -> None:
@@ -589,15 +726,15 @@ class MainWindow(QMainWindow):
             try:
                 changed = dlclist.update_file(Path(xml), dlc_name)
             except Exception as exc:
-                self.log_msg(T("dlclist_error", err=str(exc)))
+                self.log_line("XML", "err", T("dlclist_error", err=str(exc)))
                 return
             if changed:
-                self.log_msg(T("dlclist_added", name=dlc_name))
+                self.log_line("XML", "ok", T("dlclist_added", name=dlc_name))
             else:
-                self.log_msg(T("dlclist_existed", name=dlc_name))
+                self.log_line("XML", "info", T("dlclist_existed", name=dlc_name))
             return
         entry = f"    <Item>dlcpacks:/{dlc_name}/</Item>"
-        self.log_msg(T("dlclist_hint_no_xml", entry=entry))
+        self.log_line("XML", "info", T("dlclist_hint_no_xml", entry=entry))
 
 
 def _set_windows_app_id() -> None:

@@ -49,6 +49,10 @@ jobs:
       - name: Generate Windows .ico from logo.png
         run: python tools/build_icon.py
 
+      - name: Stamp version into version.py
+        shell: pwsh
+        run: Set-Content -Path version.py -Value "__version__ = `"${{ steps.ver.outputs.version }}`"" -Encoding utf8
+
       - name: Build app with PyInstaller
         run: python -m PyInstaller --noconfirm AddonV.spec
 

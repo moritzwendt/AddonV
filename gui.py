@@ -7,10 +7,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QLocale
+from PySide6.QtCore import Qt, QLocale, QThread, Signal
 from PySide6.QtGui import (
     QDragEnterEvent,
     QDropEvent,
+    QDesktopServices,
     QIcon,
     QPalette,
     QColor,
@@ -34,6 +35,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMainWindow,
     QMessageBox,
+    QProgressDialog,
     QPushButton,
     QRadioButton,
     QTextEdit,
@@ -44,6 +46,7 @@ from PySide6.QtWidgets import (
 import archive
 import dlclist
 import i18n
+import updater
 from config import Config
 from gta_detect import derive_paths, find_default_install, is_gta_root
 from i18n import LANGUAGES, T
@@ -90,6 +93,36 @@ def _system_default_language() -> str:
     name = QLocale.system().name().lower()
     code = name.split("_", 1)[0]
     return code if code in LANGUAGES else "en"
+
+
+class _UpdateCheckWorker(QThread):
+    # ok=False means the check itself failed; info is None when up to date
+    done = Signal(bool, object)
+
+    def run(self) -> None:
+        try:
+            self.done.emit(True, updater.check_for_update())
+        except Exception:
+            self.done.emit(False, None)
+
+
+class _DownloadWorker(QThread):
+    progress = Signal(int, int)
+    finished_ok = Signal(str)
+    failed = Signal(str)
+
+    def __init__(self, info, parent=None) -> None:
+        super().__init__(parent)
+        self._info = info
+
+    def run(self) -> None:
+        try:
+            path = updater.download_installer(
+                self._info, progress=lambda d, t: self.progress.emit(d, t)
+            )
+            self.finished_ok.emit(str(path))
+        except Exception as exc:
+            self.failed.emit(str(exc))
 
 
 class _ReplaceDecider:
@@ -172,7 +205,14 @@ class LanguageDialog(QDialog):
 
 class SettingsDialog(QDialog):
 
-    def __init__(self, current_lang: str, save_history: bool, parent=None) -> None:
+    def __init__(
+        self,
+        current_lang: str,
+        save_history: bool,
+        auto_check: bool,
+        on_check_now,
+        parent=None,
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle(T("settings_title"))
         self.setModal(True)
@@ -194,6 +234,17 @@ class SettingsDialog(QDialog):
         self._history_cb.setChecked(save_history)
         layout.addWidget(self._history_cb)
 
+        self._update_cb = QCheckBox(T("settings_check_updates"))
+        self._update_cb.setChecked(auto_check)
+        layout.addWidget(self._update_cb)
+
+        check_row = QHBoxLayout()
+        check_row.addStretch(1)
+        check_btn = QPushButton(T("settings_check_now"))
+        check_btn.clicked.connect(on_check_now)
+        check_row.addWidget(check_btn)
+        layout.addLayout(check_row)
+
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel, parent=self
         )
@@ -208,6 +259,9 @@ class SettingsDialog(QDialog):
 
     def save_history(self) -> bool:
         return self._history_cb.isChecked()
+
+    def auto_check(self) -> bool:
+        return self._update_cb.isChecked()
 
 
 class DropZone(QFrame):
@@ -747,11 +801,15 @@ class MainWindow(QMainWindow):
         self._progress_on = False
         self._busy = False
         self._history: list[tuple[str, str, str]] = []
+        self._update_worker = None
+        self._dl_worker = None
 
         self._apply_dark_palette()
         self.retranslate_ui()
         self._restore_history()
         self._first_run_autodetect()
+        if self.config.auto_check_updates:
+            self.check_updates(manual=False)
 
     def _init_language(self) -> None:
         saved = self.config.language
@@ -767,19 +825,106 @@ class MainWindow(QMainWindow):
 
     def open_settings(self) -> None:
         dlg = SettingsDialog(
-            i18n.get_language(), self.config.save_terminal_history, parent=self
+            i18n.get_language(),
+            self.config.save_terminal_history,
+            self.config.auto_check_updates,
+            on_check_now=lambda: self.check_updates(manual=True),
+            parent=self,
         )
         if dlg.exec() != QDialog.Accepted:
             return
         self.config.save_terminal_history = dlg.save_history()
         if not self.config.save_terminal_history:
             self.config.terminal_history = []  # forget what was kept once turned off
+        self.config.auto_check_updates = dlg.auto_check()
         new_lang = dlg.language()
         if new_lang and new_lang != i18n.get_language():
             i18n.set_language(new_lang)
             self.config.language = new_lang
             self.retranslate_ui()
         self.config.save()
+
+    def check_updates(self, manual: bool = False) -> None:
+        if self._update_worker is not None and self._update_worker.isRunning():
+            return
+        worker = _UpdateCheckWorker(self)
+        worker.done.connect(lambda ok, info: self._on_update_result(ok, info, manual))
+        self._update_worker = worker
+        worker.start()
+
+    def _on_update_result(self, ok: bool, info, manual: bool) -> None:
+        if not ok:
+            if manual:
+                QMessageBox.warning(
+                    self, T("settings_title"), T("update_check_failed")
+                )
+            return
+        if info is None:
+            if manual:
+                QMessageBox.information(
+                    self,
+                    T("settings_title"),
+                    T("update_none", current=updater.CURRENT_VERSION),
+                )
+            return
+        self._prompt_update(info)
+
+    def _prompt_update(self, info) -> None:
+        self.log_line("INFO", "info", T("update_available_log", version=info.version))
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Information)
+        box.setWindowTitle(T("update_available_title"))
+        box.setText(
+            T(
+                "update_available_body",
+                version=info.version,
+                current=updater.CURRENT_VERSION,
+            )
+        )
+        install_btn = box.addButton(T("update_install_btn"), QMessageBox.AcceptRole)
+        box.addButton(T("update_later_btn"), QMessageBox.RejectRole)
+        never_btn = box.addButton(T("update_never_btn"), QMessageBox.DestructiveRole)
+        box.exec()
+        clicked = box.clickedButton()
+        if clicked is install_btn:
+            self._start_download(info)
+        elif clicked is never_btn:
+            self.config.auto_check_updates = False
+            self.config.save()
+
+    def _start_download(self, info) -> None:
+        # no installer asset attached: just open the release page in the browser
+        if not info.asset_url:
+            QDesktopServices.openUrl(info.page_url)
+            return
+        dlg = QProgressDialog(T("update_downloading"), T("cancel"), 0, 100, self)
+        dlg.setWindowTitle(T("update_available_title"))
+        dlg.setMinimumDuration(0)
+        dlg.setValue(0)
+
+        worker = _DownloadWorker(info, self)
+
+        def on_progress(done: int, total: int) -> None:
+            dlg.setMaximum(total if total > 0 else 0)  # 0 => busy indicator
+            if total > 0:
+                dlg.setValue(done)
+
+        def on_ok(path: str) -> None:
+            dlg.close()
+            updater.run_installer(Path(path))
+            QApplication.quit()  # exit so the installer can replace the files
+
+        def on_fail(err: str) -> None:
+            dlg.close()
+            QMessageBox.warning(self, T("update_available_title"),
+                                T("update_download_failed", err=err))
+
+        worker.progress.connect(on_progress)
+        worker.finished_ok.connect(on_ok)
+        worker.failed.connect(on_fail)
+        dlg.canceled.connect(worker.terminate)
+        self._dl_worker = worker
+        worker.start()
 
     def manage_mods(self) -> None:
         paths = self._ensure_paths()

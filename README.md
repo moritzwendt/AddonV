@@ -29,6 +29,9 @@ A small open-source GUI tool to install GTA V single-player mods
   box; installing [7-Zip](https://7-zip.org) enables every format including RAR.
 - Mod manager — enable/disable packs (commented out in `dlclist.xml`),
   reorder the load order by drag-and-drop, repair the list, and spot duplicates
+- Auto-update — checks GitHub Releases on startup and offers to download and
+  install a newer version; can be re-checked from Settings or turned off
+- Settings — language, terminal-history persistence, and update preference
 - Persistent config in `%USERPROFILE%\.addonv\config.json`
 
 ## Build it yourself

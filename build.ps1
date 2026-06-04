@@ -23,6 +23,9 @@ if ($LASTEXITCODE -ne 0) { throw "pip install pillow failed" }
 python tools\build_icon.py
 if ($LASTEXITCODE -ne 0) { throw "icon generation failed" }
 
+Write-Host "==> Stamping version $Version into version.py"
+Set-Content -Path version.py -Value "__version__ = `"$Version`"" -Encoding utf8
+
 Write-Host "==> Building application with PyInstaller (version $Version)"
 python -m PyInstaller --noconfirm AddonV.spec
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed" }

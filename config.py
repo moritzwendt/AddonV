@@ -17,6 +17,7 @@ class Config:
     manage_sort: str = "name"
     save_terminal_history: bool = True
     terminal_history: list = field(default_factory=list)
+    auto_check_updates: bool = True
 
     @classmethod
     def load(cls) -> "Config":

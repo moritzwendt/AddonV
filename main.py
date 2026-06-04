@@ -1,4 +1,3 @@
-"""Entry point for the AddonV GTA mod installer."""
 from gui import run
 
 

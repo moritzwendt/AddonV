@@ -1,10 +1,3 @@
-"""Simple dict-based translator for the AddonV GUI.
-
-`T(key, **fmt)` looks up the active language, falls back to English, and
-formats positional/keyword args via str.format. Modules call `T()` lazily
-so that switching language at runtime takes effect on the next render
-(`MainWindow.retranslate_ui()`).
-"""
 from __future__ import annotations
 
 LANGUAGES: dict[str, str] = {
@@ -41,19 +34,21 @@ def T(key: str, **kwargs) -> str:
 
 TRANSLATIONS: dict[str, dict[str, str]] = {
     "en": {
-        # window / generic
         "window_title": "AddonV",
         "ok": "OK",
         "cancel": "Cancel",
         "yes": "Yes",
         "no": "No",
 
-        # language dialog
         "lang_dialog_title": "Choose language",
         "lang_dialog_hint": "Select your preferred language:",
         "lang_button": "🌐 Language",
+        "settings_btn": "⚙ Settings",
+        "settings_title": "Settings",
+        "settings_language": "Language:",
+        "settings_save_history": "Save terminal history between sessions",
+        "history_restored": "— previous session —",
 
-        # manage mods
         "manage_btn": "📦 Manage mods",
         "manage_dialog_title": "Installed DLC mods",
         "manage_empty": "No DLC mods installed.",
@@ -84,7 +79,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlclist_enabled": "dlclist.xml: '{name}' enabled.",
         "dlclist_duplicate": "dlclist.xml: '{name}' is listed more than once — remove the duplicate.",
 
-        # repair dlclist
         "repair_none": "dlclist.xml: nothing to repair — list matches installed packs.",
         "repair_added": "dlclist.xml: re-added missing entry for '{name}'.",
         "repair_removed": "dlclist.xml: removed entry for missing '{name}'.",
@@ -95,7 +89,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         ),
         "repair_summary": "Repair done: {added} added, {removed} removed, {kept} kept.",
 
-        # path / mode
         "choose_gta_btn": "Choose GTA path…",
         "gta_path_label": "GTA path:  {path}",
         "gta_path_unset": "GTA path:  (not set — please choose)",
@@ -103,11 +96,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "mode_safe": "Mode: safe (mods/)",
         "mode_direct": "Mode: DIRECT — original files will be modified!",
 
-        # drop zones
         "drop_zone_title": "Drop mods here",
         "drop_zone_hint": (
-            "Drag DLC folders (with dlc.rpf) or ELS-VCF .xml files/folders here.\n"
-            "AddonV detects the type automatically:\n"
+            "Drag DLC folders (with dlc.rpf), ELS-VCF .xml files/folders, or\n"
+            "archives (.zip .oiv .7z .rar) here. AddonV detects the type and,\n"
+            "for archives, extracts to a temp folder, installs, then cleans up.\n"
             "DLC → mods/update/x64/dlcpacks (+ dlclist.xml) · ELS → ELS/pack_default."
         ),
         "drop_unknown": (
@@ -115,13 +108,22 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "(containing dlc.rpf) or ELS-VCF .xml file(s)."
         ),
 
-        # dlclist row
+        "archive_extracting": "Extracting '{name}'…",
+        "archive_extracted": "Extracted '{name}'.",
+        "archive_failed": "Could not extract '{name}': {err}",
+        "archive_corrupt": (
+            "'{name}' looks corrupted or incomplete — try downloading it again."
+        ),
+        "archive_unsupported": (
+            "Can't open '{name}': {fmt} archives need 7-Zip installed. "
+            "Install 7-Zip (7-zip.org), or extract it manually and drop the folder."
+        ),
+
         "dlclist_btn": "Choose dlclist.xml…",
         "dlclist_clear_btn": "reset",
         "dlclist_label": "dlclist.xml:  {path}",
         "dlclist_unset": "dlclist.xml:  (optional — extracted file for automatic editing)",
 
-        # log messages (GUI)
         "gta_detected": "GTA detected automatically: {path}",
         "gta_not_detected": "Note: GTA path not detected automatically — please choose above.",
         "gta_path_set": "GTA path set: {path}",
@@ -137,7 +139,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "  before </Paths> (e.g. via OpenIV):\n{entry}"
         ),
 
-        # message boxes
         "gta_missing_title": "GTA path missing",
         "gta_missing_body": "Please choose the GTA installation path first.",
         "invalid_folder_title": "Invalid folder",
@@ -157,7 +158,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Still install directly into the GTA main folder?"
         ),
 
-        # installer messages (DLC)
         "dlc_exists": "DLC '{name}' already exists.",
         "dlc_installing": "Installing DLC '{name}'…",
         "dlc_installed": "DLC '{name}' installed ({size}).",
@@ -166,7 +166,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "  (Tip: installing into Program Files may require running AddonV as administrator.)"
         ),
 
-        # installer messages (ELS)
         "els_src_missing": "Source does not exist: {path}",
         "els_not_vcf": "'{name}' doesn't look like an ELS-VCF file.",
         "els_no_xmls": "No ELS-VCF XML files found.",
@@ -174,18 +173,26 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_copy_failed_partial": "Stopped after {copied} file(s): could not copy '{name}': {err}",
         "els_summary": "ELS — {copied} file(s) installed, {skipped} kept.",
 
-        # generic errors
+        "els_pick_title": "Choose ELS variant",
+        "els_pick_hint": (
+            "This mod ships several ELS config variants with the same file name "
+            "(e.g. different light setups). Choose which folder to install from:"
+        ),
+        "els_pick_count": "{n} file(s)",
+        "els_pick_recommended": "★ closest to the pack",
+        "els_pick_root": "(top level)",
+        "els_variant_chosen": "ELS — installing variant from '{folder}'.",
+        "els_variant_skipped": "ELS — variant selection cancelled, skipped.",
+
         "drop_nothing": "Nothing usable was dropped (only files and folders are supported).",
         "unexpected_error": "Unexpected error: {err}",
 
-        # replace confirmation
         "replace_title": "Replace?",
         "dlc_replace_body": "DLC '{name}' already exists.\n\nReplace the existing version?",
         "dlc_kept": "DLC '{name}' kept — not replaced.",
         "els_replace_body": "ELS '{name}' already exists in the target folder.\n\nReplace the existing file(s)?",
         "els_kept": "ELS '{name}' kept — not replaced.",
 
-        # dlclist
         "dlclist_paths_close_missing": "`</Paths>` not found in dlclist.xml — file broken?",
     },
 
@@ -199,6 +206,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "lang_dialog_title": "Sprache wählen",
         "lang_dialog_hint": "Wähle deine bevorzugte Sprache:",
         "lang_button": "🌐 Sprache",
+        "settings_btn": "⚙ Einstellungen",
+        "settings_title": "Einstellungen",
+        "settings_language": "Sprache:",
+        "settings_save_history": "Terminal-Historie zwischen Sitzungen speichern",
+        "history_restored": "— vorherige Sitzung —",
 
         "manage_btn": "📦 Mods verwalten",
         "manage_dialog_title": "Installierte DLC-Mods",
@@ -230,7 +242,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlclist_enabled": "dlclist.xml: '{name}' aktiviert.",
         "dlclist_duplicate": "dlclist.xml: '{name}' ist mehrfach eingetragen — Duplikat entfernen.",
 
-        # repair dlclist
         "repair_none": "dlclist.xml: nichts zu reparieren — Liste passt zu den installierten Packs.",
         "repair_added": "dlclist.xml: fehlenden Eintrag für '{name}' wieder hinzugefügt.",
         "repair_removed": "dlclist.xml: Eintrag für fehlendes '{name}' entfernt.",
@@ -250,13 +261,27 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "drop_zone_title": "Mods hier ablegen",
         "drop_zone_hint": (
-            "DLC-Ordner (mit dlc.rpf) oder ELS-VCF .xml-Dateien/-Ordner hier hineinziehen.\n"
-            "AddonV erkennt den Typ automatisch:\n"
+            "DLC-Ordner (mit dlc.rpf), ELS-VCF .xml-Dateien/-Ordner oder\n"
+            "Archive (.zip .oiv .7z .rar) hier hineinziehen. AddonV erkennt den Typ\n"
+            "und entpackt Archive in einen Temp-Ordner, installiert und räumt danach auf.\n"
             "DLC → mods/update/x64/dlcpacks (+ dlclist.xml) · ELS → ELS/pack_default."
         ),
         "drop_unknown": (
             "Konnte '{name}' nicht zuordnen — bitte einen DLC-Ordner "
             "(mit dlc.rpf) oder ELS-VCF .xml-Datei(en) ablegen."
+        ),
+
+        "archive_extracting": "Entpacke '{name}'…",
+        "archive_extracted": "'{name}' entpackt.",
+        "archive_failed": "'{name}' konnte nicht entpackt werden: {err}",
+        "archive_corrupt": (
+            "'{name}' scheint beschädigt oder unvollständig zu sein — "
+            "bitte erneut herunterladen."
+        ),
+        "archive_unsupported": (
+            "'{name}' kann nicht geöffnet werden: für {fmt}-Archive wird 7-Zip "
+            "benötigt. 7-Zip installieren (7-zip.org) oder manuell entpacken und "
+            "den Ordner ablegen."
         ),
 
         "dlclist_btn": "dlclist.xml wählen…",
@@ -313,6 +338,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_copy_failed_partial": "Nach {copied} Datei(en) abgebrochen: '{name}' konnte nicht kopiert werden: {err}",
         "els_summary": "ELS — {copied} Datei(en) installiert, {skipped} behalten.",
 
+        "els_pick_title": "ELS-Variante wählen",
+        "els_pick_hint": (
+            "Dieser Mod liefert mehrere ELS-Konfig-Varianten mit gleichem Dateinamen "
+            "(z. B. verschiedene Licht-Setups). Wähle, aus welchem Ordner installiert wird:"
+        ),
+        "els_pick_count": "{n} Datei(en)",
+        "els_pick_recommended": "★ am nächsten zum Pack",
+        "els_pick_root": "(oberste Ebene)",
+        "els_variant_chosen": "ELS — installiere Variante aus '{folder}'.",
+        "els_variant_skipped": "ELS — Variantenauswahl abgebrochen, übersprungen.",
+
         "drop_nothing": "Nichts Verwertbares abgelegt (nur Dateien und Ordner werden unterstützt).",
         "unexpected_error": "Unerwarteter Fehler: {err}",
 
@@ -335,6 +371,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "lang_dialog_title": "Выбор языка",
         "lang_dialog_hint": "Выберите предпочитаемый язык:",
         "lang_button": "🌐 Язык",
+        "settings_btn": "⚙ Настройки",
+        "settings_title": "Настройки",
+        "settings_language": "Язык:",
+        "settings_save_history": "Сохранять историю терминала между сеансами",
+        "history_restored": "— предыдущий сеанс —",
 
         "manage_btn": "📦 Управление модами",
         "manage_dialog_title": "Установленные DLC-моды",
@@ -366,7 +407,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlclist_enabled": "dlclist.xml: '{name}' включён.",
         "dlclist_duplicate": "dlclist.xml: '{name}' указан несколько раз — удалите дубликат.",
 
-        # repair dlclist
         "repair_none": "dlclist.xml: исправлять нечего — список соответствует установленным пакам.",
         "repair_added": "dlclist.xml: восстановлена отсутствующая запись для '{name}'.",
         "repair_removed": "dlclist.xml: удалена запись для отсутствующего '{name}'.",
@@ -386,13 +426,25 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "drop_zone_title": "Перетащите моды сюда",
         "drop_zone_hint": (
-            "Перетащите сюда папки DLC (с dlc.rpf) или ELS-VCF .xml-файлы/папки.\n"
-            "AddonV определяет тип автоматически:\n"
+            "Перетащите сюда папки DLC (с dlc.rpf), ELS-VCF .xml-файлы/папки или\n"
+            "архивы (.zip .oiv .7z .rar). AddonV определяет тип, а архивы\n"
+            "распаковывает во временную папку, устанавливает и затем удаляет её.\n"
             "DLC → mods/update/x64/dlcpacks (+ dlclist.xml) · ELS → ELS/pack_default."
         ),
         "drop_unknown": (
             "Не удалось определить, что такое '{name}' — перетащите папку DLC "
             "(с dlc.rpf) или ELS-VCF .xml-файл(ы)."
+        ),
+
+        "archive_extracting": "Распаковка '{name}'…",
+        "archive_extracted": "'{name}' распаковано.",
+        "archive_failed": "Не удалось распаковать '{name}': {err}",
+        "archive_corrupt": (
+            "'{name}' повреждён или неполный — попробуйте скачать заново."
+        ),
+        "archive_unsupported": (
+            "Не удаётся открыть '{name}': для архивов {fmt} нужен 7-Zip. "
+            "Установите 7-Zip (7-zip.org) или распакуйте вручную и перетащите папку."
         ),
 
         "dlclist_btn": "Выбрать dlclist.xml…",
@@ -449,6 +501,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_copy_failed_partial": "Остановлено после {copied} файл(ов): не удалось скопировать '{name}': {err}",
         "els_summary": "ELS — установлено файлов: {copied}, сохранено: {skipped}.",
 
+        "els_pick_title": "Выбор варианта ELS",
+        "els_pick_hint": (
+            "Этот мод содержит несколько вариантов конфигурации ELS с одинаковым "
+            "именем файла (например, разные схемы огней). Выберите папку для установки:"
+        ),
+        "els_pick_count": "файлов: {n}",
+        "els_pick_recommended": "★ ближе всего к паку",
+        "els_pick_root": "(верхний уровень)",
+        "els_variant_chosen": "ELS — устанавливаю вариант из '{folder}'.",
+        "els_variant_skipped": "ELS — выбор варианта отменён, пропущено.",
+
         "drop_nothing": "Не перетащено ничего подходящего (поддерживаются только файлы и папки).",
         "unexpected_error": "Непредвиденная ошибка: {err}",
 
@@ -471,6 +534,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "lang_dialog_title": "Elegir idioma",
         "lang_dialog_hint": "Selecciona tu idioma preferido:",
         "lang_button": "🌐 Idioma",
+        "settings_btn": "⚙ Ajustes",
+        "settings_title": "Ajustes",
+        "settings_language": "Idioma:",
+        "settings_save_history": "Guardar el historial del terminal entre sesiones",
+        "history_restored": "— sesión anterior —",
 
         "manage_btn": "📦 Gestionar mods",
         "manage_dialog_title": "Mods DLC instalados",
@@ -502,7 +570,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlclist_enabled": "dlclist.xml: '{name}' activado.",
         "dlclist_duplicate": "dlclist.xml: '{name}' aparece más de una vez — elimina el duplicado.",
 
-        # repair dlclist
         "repair_none": "dlclist.xml: nada que reparar — la lista coincide con los packs instalados.",
         "repair_added": "dlclist.xml: entrada para '{name}' restaurada.",
         "repair_removed": "dlclist.xml: entrada del '{name}' faltante eliminada.",
@@ -522,13 +589,25 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "drop_zone_title": "Suelta los mods aquí",
         "drop_zone_hint": (
-            "Arrastra aquí carpetas DLC (con dlc.rpf) o archivos/carpetas ELS-VCF .xml.\n"
-            "AddonV detecta el tipo automáticamente:\n"
+            "Arrastra aquí carpetas DLC (con dlc.rpf), archivos/carpetas ELS-VCF .xml\n"
+            "o archivos comprimidos (.zip .oiv .7z .rar). AddonV detecta el tipo y,\n"
+            "para los comprimidos, extrae a una carpeta temporal, instala y la borra.\n"
             "DLC → mods/update/x64/dlcpacks (+ dlclist.xml) · ELS → ELS/pack_default."
         ),
         "drop_unknown": (
             "No se pudo identificar '{name}' — arrastra una carpeta DLC "
             "(con dlc.rpf) o archivo(s) ELS-VCF .xml."
+        ),
+
+        "archive_extracting": "Extrayendo '{name}'…",
+        "archive_extracted": "'{name}' extraído.",
+        "archive_failed": "No se pudo extraer '{name}': {err}",
+        "archive_corrupt": (
+            "'{name}' parece dañado o incompleto — intenta descargarlo de nuevo."
+        ),
+        "archive_unsupported": (
+            "No se puede abrir '{name}': los archivos {fmt} necesitan 7-Zip. "
+            "Instala 7-Zip (7-zip.org) o extráelo manualmente y arrastra la carpeta."
         ),
 
         "dlclist_btn": "Elegir dlclist.xml…",
@@ -584,6 +663,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_copy_failed": "No se pudo instalar ELS '{name}': {err}",
         "els_copy_failed_partial": "Detenido tras {copied} archivo(s): no se pudo copiar '{name}': {err}",
         "els_summary": "ELS — {copied} archivo(s) instalados, {skipped} conservados.",
+
+        "els_pick_title": "Elegir variante ELS",
+        "els_pick_hint": (
+            "Este mod incluye varias variantes de configuración ELS con el mismo "
+            "nombre de archivo (p. ej. distintas luces). Elige desde qué carpeta instalar:"
+        ),
+        "els_pick_count": "{n} archivo(s)",
+        "els_pick_recommended": "★ más cercana al pack",
+        "els_pick_root": "(nivel superior)",
+        "els_variant_chosen": "ELS — instalando variante desde '{folder}'.",
+        "els_variant_skipped": "ELS — selección de variante cancelada, omitida.",
 
         "drop_nothing": "No se soltó nada utilizable (solo se admiten archivos y carpetas).",
         "unexpected_error": "Error inesperado: {err}",

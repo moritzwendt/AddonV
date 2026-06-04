@@ -1,4 +1,3 @@
-"""Detect and validate GTA V install paths."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -32,12 +31,6 @@ def find_default_install() -> Optional[Path]:
 
 
 def derive_paths(gta_root: Path, use_mods: bool = True) -> dict:
-    """Return important sub-paths used for modding.
-
-    `use_mods=True` follows the OpenIV `mods/` folder convention, so the
-    original game files stay untouched. dlcpacks then resolves to
-    `<gta>/mods/update/x64/dlcpacks` instead of `<gta>/update/x64/dlcpacks`.
-    """
     base = gta_root / "mods" if use_mods else gta_root
     return {
         "root": gta_root,

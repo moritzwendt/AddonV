@@ -1,8 +1,8 @@
-"""Main GUI window built with PySide6."""
 from __future__ import annotations
 
 import html
 import os
+import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -41,13 +41,18 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+import archive
 import dlclist
 import i18n
 from config import Config
 from gta_detect import derive_paths, find_default_install, is_gta_root
 from i18n import LANGUAGES, T
 from installers import (
+    closest_els_folder,
+    els_has_name_collision,
     find_dlc_packs,
+    find_dlc_packs_deep,
+    group_els_by_folder,
     install_dlc,
     install_els,
     is_els_source,
@@ -57,30 +62,23 @@ from installers import (
 )
 
 
-# Log line styling. Each message starts with a coloured group tag ([DLC],
-# [ELS], [XML] = dlclist.xml, [INFO]) and a status glyph.
 _GROUP_COLORS = {
-    "DLC": "#4aa3ff",   # blue
-    "ELS": "#46c46a",   # green
-    "XML": "#e0a030",   # orange
-    "INFO": "#9aa0a6",  # grey
+    "DLC": "#4aa3ff",
+    "ELS": "#46c46a",
+    "XML": "#e0a030",
+    "INFO": "#9aa0a6",
 }
 _STATUS = {
-    "ok":   ("✓", "#46c46a"),  # check, green
-    "err":  ("✗", "#e05545"),  # cross, red
-    "work": ("→", "#9aa0a6"),  # arrow, grey
-    "info": ("",       "#9aa0a6"),  # no glyph
+    "ok":   ("✓", "#46c46a"),
+    "err":  ("✗", "#e05545"),
+    "work": ("→", "#9aa0a6"),
+    "info": ("",       "#9aa0a6"),
 }
 _TEXT_COLOR = "#dddddd"
-_PROGRESS_WIDTH = 24  # characters in the ASCII progress bar
+_PROGRESS_WIDTH = 24
 
 
 def _asset_path(name: str) -> str:
-    """Resolve a bundled asset both in dev mode and inside a PyInstaller build.
-
-    PyInstaller onedir puts datas next to the exe; onefile extracts to
-    `sys._MEIPASS`. In dev mode, assets live next to this source file.
-    """
     if getattr(sys, "frozen", False):
         base = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
     else:
@@ -89,21 +87,12 @@ def _asset_path(name: str) -> str:
 
 
 def _system_default_language() -> str:
-    """Map the OS locale to one of our supported languages, fallback to English."""
-    name = QLocale.system().name().lower()  # e.g. "de_de"
+    name = QLocale.system().name().lower()
     code = name.split("_", 1)[0]
     return code if code in LANGUAGES else "en"
 
 
 class _ReplaceDecider:
-    """Per-item replace prompt that remembers a 'to all' choice.
-
-    Used while installing a batch (several DLC packs or ELS files): the first
-    conflict offers Yes / No / Yes to All / No to All. Picking a "to all"
-    button answers every remaining conflict in the batch without re-asking.
-    The "to all" buttons are only shown when `offer_all` is set (i.e. more
-    than one file is being installed) — for a single file they'd be pointless.
-    """
 
     def __init__(
         self,
@@ -116,7 +105,7 @@ class _ReplaceDecider:
         self._body_key = body_key
         self._title_key = title_key
         self._offer_all = offer_all
-        self._all: bool | None = None  # None = keep asking
+        self._all: bool | None = None
 
     def __call__(self, name: str) -> bool:
         if self._all is not None:
@@ -141,7 +130,6 @@ class _ReplaceDecider:
 
 
 class LanguageDialog(QDialog):
-    """Simple radio-button picker shown on first run or via the language button."""
 
     def __init__(self, current: str, parent=None):
         super().__init__(parent)
@@ -182,12 +170,47 @@ class LanguageDialog(QDialog):
         return self._chosen
 
 
-class DropZone(QFrame):
-    """A labelled drop target that calls back with all dropped paths at once.
+class SettingsDialog(QDialog):
 
-    Passing the whole batch (rather than one path per call) lets the handler
-    apply a single "replace all / keep all" decision across everything dropped.
-    """
+    def __init__(self, current_lang: str, save_history: bool, parent=None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(T("settings_title"))
+        self.setModal(True)
+
+        layout = QVBoxLayout(self)
+
+        lang_row = QHBoxLayout()
+        lang_row.addWidget(QLabel(T("settings_language")))
+        self._lang_combo = QComboBox()
+        for code, label in LANGUAGES.items():
+            self._lang_combo.addItem(label, code)
+        idx = self._lang_combo.findData(current_lang)
+        if idx >= 0:
+            self._lang_combo.setCurrentIndex(idx)
+        lang_row.addWidget(self._lang_combo, 1)
+        layout.addLayout(lang_row)
+
+        self._history_cb = QCheckBox(T("settings_save_history"))
+        self._history_cb.setChecked(save_history)
+        layout.addWidget(self._history_cb)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, parent=self
+        )
+        buttons.button(QDialogButtonBox.Ok).setText(T("ok"))
+        buttons.button(QDialogButtonBox.Cancel).setText(T("cancel"))
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def language(self) -> str:
+        return self._lang_combo.currentData()
+
+    def save_history(self) -> bool:
+        return self._history_cb.isChecked()
+
+
+class DropZone(QFrame):
 
     BASE_STYLE = """
         QFrame {
@@ -249,15 +272,10 @@ class DropZone(QFrame):
 
 
 class _ModRow(QWidget):
-    """A modern, at-a-glance row for one installed DLC pack.
-
-    Shows a coloured status dot, the pack name, a meta line (date added) and one
-    or more state pills (e.g. "active", "disabled", "duplicate"). The widget is
-    translucent so the list's own selection highlight shows through behind it.
-    """
 
     def __init__(self, name: str, meta: str, dot_color: str, pills) -> None:
         super().__init__()
+        # transparent so the list selection highlight shows through the row
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         h = QHBoxLayout(self)
         h.setContentsMargins(10, 7, 10, 7)
@@ -290,21 +308,11 @@ class _ModRow(QWidget):
 
 
 class ManageModsDialog(QDialog):
-    """List installed DLC packs and let the user manage them.
 
-    Per pack the user can enable/disable it, remove it, and (in load-order mode)
-    move it up or down. Disabling comments the entry out in dlclist.xml: the
-    folder stays on disk and the pack simply isn't loaded, so it reads as
-    "switched off", not "missing". A repair action reconciles dlclist.xml with
-    the folders actually present, and duplicate entries are flagged on sight.
-    """
+    _ACTIVE = "active"
+    _DISABLED = "disabled"
+    _UNLISTED = "unlisted"
 
-    # Per-item state, used to label the toggle button and colour the row.
-    _ACTIVE = "active"        # folder present, listed and loaded
-    _DISABLED = "disabled"    # folder present, listed but commented out
-    _UNLISTED = "unlisted"    # folder present but no dlclist.xml entry
-
-    # state -> (dot colour, pill text colour, pill background)
     _STATE_STYLE = {
         _ACTIVE:   ("#46c46a", "#7fe39a", "rgba(70,196,106,0.18)"),
         _DISABLED: ("#8a8f94", "#b8bdc2", "rgba(138,143,148,0.18)"),
@@ -312,12 +320,13 @@ class ManageModsDialog(QDialog):
     }
     _DUPLICATE_PILL = ("#ff8a7a", "rgba(224,85,69,0.22)")
 
-    def __init__(self, dlcpacks_dir: Path, dlclist_xml: str, log_line, parent=None):
+    def __init__(self, dlcpacks_dir: Path, dlclist_xml: str, log_line, config, parent=None):
         super().__init__(parent)
         self._dlcpacks_dir = dlcpacks_dir
         self._dlclist_xml = dlclist_xml
-        self._log_line = log_line  # (group, status, text) -> None
-        self._warned_dupes = False  # log the duplicate warning only once
+        self._log_line = log_line
+        self._config = config
+        self._warned_dupes = False
 
         self.setWindowTitle(T("manage_dialog_title"))
         self.setModal(True)
@@ -326,7 +335,6 @@ class ManageModsDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setSpacing(8)
 
-        # --- search + sort controls ---
         top_row = QHBoxLayout()
         self._search = QLineEdit()
         self._search.setPlaceholderText(T("manage_search_placeholder"))
@@ -341,14 +349,17 @@ class ManageModsDialog(QDialog):
         self._sort_combo.addItem(T("manage_sort_name"), "name")
         self._sort_combo.addItem(T("manage_sort_date"), "date")
         self._sort_combo.addItem(T("manage_sort_order"), "order")
-        self._sort_combo.currentIndexChanged.connect(self._refresh)
+        # restore the saved sort before connecting so it does not persist on init
+        saved = self._sort_combo.findData(self._config.manage_sort)
+        if saved >= 0:
+            self._sort_combo.setCurrentIndex(saved)
+        self._sort_combo.currentIndexChanged.connect(self._on_sort_changed)
         top_row.addWidget(self._search, 1)
         top_row.addWidget(self._sort_label)
         top_row.addWidget(self._sort_combo)
         layout.addLayout(top_row)
 
-        # --- list (drag to reorder in load-order mode) ---
-        self._loading = False  # guards rowsMoved while _refresh rebuilds the list
+        self._loading = False
         self._list = QListWidget()
         self._list.setStyleSheet(
             "QListWidget { background:#1c1c1e; border:1px solid #444; "
@@ -360,7 +371,6 @@ class ManageModsDialog(QDialog):
         self._list.model().rowsMoved.connect(self._on_rows_moved)
         layout.addWidget(self._list, 1)
 
-        # --- action buttons ---
         btn_row = QHBoxLayout()
         self._toggle_btn = QPushButton(T("manage_disable_btn"))
         self._toggle_btn.clicked.connect(self._toggle_selected)
@@ -383,7 +393,6 @@ class ManageModsDialog(QDialog):
         return bool(self._dlclist_xml) and Path(self._dlclist_xml).is_file()
 
     def _read_dlclist(self) -> str:
-        """dlclist.xml text, or '' if none is configured / it can't be read."""
         if not self._has_dlclist():
             return ""
         try:
@@ -394,8 +403,15 @@ class ManageModsDialog(QDialog):
     def _sort_mode(self) -> str:
         return self._sort_combo.currentData()
 
-    def _refresh(self, *_) -> None:  # *_ swallows signal args (combo index / text)
-        keep = self._selected_name()  # restore selection across the rebuild
+    def _on_sort_changed(self, *_) -> None:
+        # the chosen sort is remembered across sessions automatically
+        self._config.manage_sort = self._sort_mode()
+        self._config.save()
+        self._refresh()
+
+    def _refresh(self, *_) -> None:
+        keep = self._selected_name()  # restore the selection after the rebuild
+        # guard so rebuilding the list does not trigger the row moved handler
         self._loading = True
         try:
             self._populate(keep)
@@ -424,9 +440,8 @@ class ManageModsDialog(QDialog):
 
         mode = self._sort_mode()
         if mode == "date":
-            infos.sort(key=lambda d: d.added, reverse=True)  # newest first
+            infos.sort(key=lambda d: d.added, reverse=True)
         elif mode == "order":
-            # Load order from dlclist.xml; packs with no entry sink to the bottom.
             infos.sort(key=lambda d: (order.get(d.name, len(order)), d.name.lower()))
         else:
             infos.sort(key=lambda d: d.name.lower())
@@ -470,14 +485,11 @@ class ManageModsDialog(QDialog):
         state = self._selected_state()
         self._remove_btn.setEnabled(name is not None)
         self._repair_btn.setEnabled(self._has_dlclist())
-        # Disabling/enabling only makes sense when a dlclist.xml is configured.
         self._toggle_btn.setEnabled(name is not None and self._has_dlclist())
         if state == self._ACTIVE:
             self._toggle_btn.setText(T("manage_disable_btn"))
         else:
             self._toggle_btn.setText(T("manage_enable_btn"))
-        # Drag-to-reorder is only meaningful when the list shows the real load
-        # order in full (load-order mode, no search filtering the view).
         can_reorder = (
             self._has_dlclist()
             and self._sort_mode() == "order"
@@ -502,7 +514,6 @@ class ManageModsDialog(QDialog):
         return item.data(Qt.UserRole)
 
     def _on_rows_moved(self, *_) -> None:
-        """Persist a drag-reorder: write the list's new order into dlclist.xml."""
         if self._loading or not self._has_dlclist():
             return
         listed = set(dlclist.list_ordered_entries(self._read_dlclist()))
@@ -515,7 +526,8 @@ class ManageModsDialog(QDialog):
             dlclist.set_order_in_file(Path(self._dlclist_xml), order)
         except Exception as exc:
             self._log_line("XML", "err", T("dlclist_error", err=str(exc)))
-        self._refresh()  # rebuild the row widgets the internal move discarded
+        # the internal drag move drops the row widgets so rebuild the list
+        self._refresh()
 
     def _toggle_selected(self) -> None:
         name = self._selected_name()
@@ -527,7 +539,6 @@ class ManageModsDialog(QDialog):
                 if dlclist.disable_in_file(path, name):
                     self._log_line("XML", "ok", T("dlclist_disabled", name=name))
             else:
-                # Re-enable: uncomment if disabled, otherwise add a fresh entry.
                 changed = dlclist.enable_in_file(path, name)
                 if not changed:
                     changed = dlclist.update_file(path, name)
@@ -538,20 +549,14 @@ class ManageModsDialog(QDialog):
         self._refresh()
 
     def _repair(self) -> None:
-        """Reconcile dlclist.xml with the folders actually present.
-
-        Folders without an entry are re-added automatically; entries whose
-        folder is gone are removed only after the user confirms (per item, with
-        a "to all" shortcut).
-        """
         if not self._has_dlclist():
             return
         path = Path(self._dlclist_xml)
         text = self._read_dlclist()
         registered = set(dlclist.list_entries(text))
         installed = {d.name for d in list_installed_dlc_info(self._dlcpacks_dir)}
-        orphans = sorted(installed - registered)   # folder present, no entry
-        missing = sorted(registered - installed)   # entry present, folder gone
+        orphans = sorted(installed - registered)
+        missing = sorted(registered - installed)
 
         if not orphans and not missing:
             self._log_line("XML", "info", T("repair_none"))
@@ -613,6 +618,60 @@ class ManageModsDialog(QDialog):
         self._refresh()
 
 
+class ElsFolderDialog(QDialog):
+
+    def __init__(self, root: Path, groups, default: Path, parent=None) -> None:
+        super().__init__(parent)
+        self._chosen: Path | None = None
+        self.setWindowTitle(T("els_pick_title"))
+        self.setModal(True)
+        self.resize(500, 340)
+
+        layout = QVBoxLayout(self)
+        hint = QLabel(T("els_pick_hint"))
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+
+        self._list = QListWidget()
+        self._list.setStyleSheet(
+            "background-color:#1c1c1e; color:#ddd; border:1px solid #444; border-radius:6px;"
+        )
+        self._list.itemDoubleClicked.connect(lambda *_: self._accept())
+        layout.addWidget(self._list, 1)
+
+        for folder in sorted(groups, key=lambda f: str(f).lower()):
+            try:
+                rel = folder.relative_to(root)
+                label = T("els_pick_root") if str(rel) == "." else str(rel)
+            except ValueError:
+                label = folder.name
+            text = f"{label}    ·    {T('els_pick_count', n=len(groups[folder]))}"
+            if folder == default:
+                text += "    " + T("els_pick_recommended")
+            item = QListWidgetItem(text)
+            item.setData(Qt.UserRole, str(folder))
+            self._list.addItem(item)
+            if folder == default:
+                self._list.setCurrentItem(item)
+        if self._list.currentItem() is None and self._list.count():
+            self._list.setCurrentRow(0)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self._accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def _accept(self) -> None:
+        item = self._list.currentItem()
+        if item is None:
+            return
+        self._chosen = Path(item.data(Qt.UserRole))
+        self.accept()
+
+    def chosen(self) -> Path | None:
+        return self._chosen
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -627,7 +686,6 @@ class MainWindow(QMainWindow):
         root_layout.setContentsMargins(14, 14, 14, 14)
         root_layout.setSpacing(10)
 
-        # --- Logo header ------------------------------------------------
         logo_path = _asset_path("logo.png")
         if os.path.exists(logo_path):
             logo_lbl = QLabel()
@@ -638,23 +696,21 @@ class MainWindow(QMainWindow):
             logo_lbl.setAlignment(Qt.AlignCenter)
             root_layout.addWidget(logo_lbl)
 
-        # --- GTA path row -----------------------------------------------
         path_row = QHBoxLayout()
         self.path_label = QLabel()
         self.path_label.setStyleSheet("color: #ddd;")
         self.choose_btn = QPushButton()
         self.choose_btn.clicked.connect(self.choose_gta_path)
-        self.lang_btn = QPushButton()
-        self.lang_btn.clicked.connect(self.choose_language)
+        self.settings_btn = QPushButton()
+        self.settings_btn.clicked.connect(self.open_settings)
         self.manage_btn = QPushButton()
         self.manage_btn.clicked.connect(self.manage_mods)
         path_row.addWidget(self.path_label, stretch=1)
         path_row.addWidget(self.choose_btn)
         path_row.addWidget(self.manage_btn)
-        path_row.addWidget(self.lang_btn)
+        path_row.addWidget(self.settings_btn)
         root_layout.addLayout(path_row)
 
-        # --- Install-mode row ------------------------------------------
         mode_row = QHBoxLayout()
         self.mods_checkbox = QCheckBox()
         self.mods_checkbox.setChecked(self.config.use_mods_folder)
@@ -666,12 +722,9 @@ class MainWindow(QMainWindow):
         mode_row.addWidget(self.mode_status)
         root_layout.addLayout(mode_row)
 
-        # --- Drop zone --------------------------------------------------
-        # One box for everything: the app detects DLC vs ELS per dropped item.
         self.zone = DropZone(T("drop_zone_title"), T("drop_zone_hint"), self.on_drop)
         root_layout.addWidget(self.zone)
 
-        # --- dlclist.xml row -------------------------------------------
         xml_row = QHBoxLayout()
         self.xml_label = QLabel()
         self.xml_label.setStyleSheet("color: #ddd;")
@@ -684,7 +737,6 @@ class MainWindow(QMainWindow):
         xml_row.addWidget(self.clear_xml_btn)
         root_layout.addLayout(xml_row)
 
-        # --- Log --------------------------------------------------------
         self.log = QTextEdit()
         self.log.setReadOnly(True)
         self.log.setStyleSheet(
@@ -692,20 +744,20 @@ class MainWindow(QMainWindow):
             "font-family: Consolas, 'Courier New', monospace; font-size: 12px;"
         )
         root_layout.addWidget(self.log, stretch=1)
-        self._progress_on = False  # is the last log line a live progress bar?
-        self._busy = False  # an install is running (drops are blocked)
+        self._progress_on = False
+        self._busy = False
+        self._history: list[tuple[str, str, str]] = []
 
         self._apply_dark_palette()
         self.retranslate_ui()
+        self._restore_history()
         self._first_run_autodetect()
 
-    # ----- language ----- #
     def _init_language(self) -> None:
         saved = self.config.language
         if saved and saved in LANGUAGES:
             i18n.set_language(saved)
             return
-        # First run: pick the system default, but require explicit confirmation.
         i18n.set_language(_system_default_language())
         dlg = LanguageDialog(i18n.get_language(), parent=self)
         dlg.exec()
@@ -713,24 +765,29 @@ class MainWindow(QMainWindow):
         self.config.language = i18n.get_language()
         self.config.save()
 
-    def choose_language(self) -> None:
-        dlg = LanguageDialog(i18n.get_language(), parent=self)
+    def open_settings(self) -> None:
+        dlg = SettingsDialog(
+            i18n.get_language(), self.config.save_terminal_history, parent=self
+        )
         if dlg.exec() != QDialog.Accepted:
             return
-        new_lang = dlg.chosen()
-        if new_lang == i18n.get_language():
-            return
-        i18n.set_language(new_lang)
-        self.config.language = new_lang
+        self.config.save_terminal_history = dlg.save_history()
+        if not self.config.save_terminal_history:
+            self.config.terminal_history = []  # forget what was kept once turned off
+        new_lang = dlg.language()
+        if new_lang and new_lang != i18n.get_language():
+            i18n.set_language(new_lang)
+            self.config.language = new_lang
+            self.retranslate_ui()
         self.config.save()
-        self.retranslate_ui()
 
     def manage_mods(self) -> None:
         paths = self._ensure_paths()
         if not paths:
             return
         dlg = ManageModsDialog(
-            paths["dlcpacks"], self.config.dlclist_xml_path, self.log_line, parent=self
+            paths["dlcpacks"], self.config.dlclist_xml_path, self.log_line,
+            self.config, parent=self,
         )
         dlg.exec()
 
@@ -738,14 +795,13 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(T("window_title"))
         self.choose_btn.setText(T("choose_gta_btn"))
         self.manage_btn.setText(T("manage_btn"))
-        self.lang_btn.setText(T("lang_button"))
+        self.settings_btn.setText(T("settings_btn"))
         self.mods_checkbox.setText(T("mods_checkbox"))
         self.zone.set_texts(T("drop_zone_title"), T("drop_zone_hint"))
         self.xml_btn.setText(T("dlclist_btn"))
         self.clear_xml_btn.setText(T("dlclist_clear_btn"))
         self._refresh_labels()
 
-    # ----- helpers ----- #
     def _apply_dark_palette(self) -> None:
         p = self.palette()
         p.setColor(QPalette.Window, QColor(40, 40, 43))
@@ -784,9 +840,11 @@ class MainWindow(QMainWindow):
         else:
             self.log_line("INFO", "info", T("gta_not_detected"))
 
-    # ----- logging ----- #
     def log_line(self, group: str, status: str, text: str) -> None:
-        """Append a coloured `[GROUP] <glyph> text` line to the log."""
+        self._history.append((group, status, text))
+        self._render_log(group, status, text)
+
+    def _render_log(self, group: str, status: str, text: str) -> None:
         self._clear_progress()
         glyph, scolor = _STATUS.get(status, _STATUS["info"])
         gcolor = _GROUP_COLORS.get(group, _GROUP_COLORS["INFO"])
@@ -798,16 +856,29 @@ class MainWindow(QMainWindow):
         )
         self._append_html(" ".join(parts))
 
+    def _restore_history(self) -> None:
+        if not self.config.save_terminal_history:
+            return
+        # render saved lines without re-recording them into _history
+        entries = [tuple(e) for e in self.config.terminal_history if len(e) == 3]
+        self._history = list(entries)
+        for group, status, text in entries:
+            self._render_log(group, status, text)
+        if entries:
+            self._render_log("INFO", "info", T("history_restored"))
+
+    def closeEvent(self, event) -> None:
+        if self.config.save_terminal_history:
+            self.config.terminal_history = self._history[-1000:]  # cap growth
+        else:
+            self.config.terminal_history = []
+        self.config.save()
+        super().closeEvent(event)
+
     def log_msg(self, msg: str) -> None:
-        """Backwards-compatible plain logger (treated as an INFO line)."""
         self.log_line("INFO", "info", msg)
 
     def _group_logger(self, group: str):
-        """A single-arg `LogFn` that logs into `group` as a progress/work line.
-
-        Used for the installers' internal `log(text)` calls, which don't know
-        about groups or status.
-        """
         return lambda msg: self.log_line(group, "work", msg)
 
     def _append_html(self, line_html: str) -> None:
@@ -819,7 +890,6 @@ class MainWindow(QMainWindow):
         self.log.setTextCursor(cur)
         self.log.ensureCursorVisible()
 
-    # ----- progress bar (lives as the last log line) ----- #
     def _show_progress(self, group: str, done: int, total: int, label: str) -> None:
         frac = 1.0 if total <= 0 else max(0.0, min(1.0, done / total))
         filled = round(frac * _PROGRESS_WIDTH)
@@ -835,7 +905,7 @@ class MainWindow(QMainWindow):
         cur = self.log.textCursor()
         cur.movePosition(QTextCursor.MoveOperation.End)
         if self._progress_on:
-            # Replace the existing bar line in place.
+            # overwrite the existing bar line in place instead of stacking lines
             cur.movePosition(
                 QTextCursor.MoveOperation.StartOfBlock,
                 QTextCursor.MoveMode.KeepAnchor,
@@ -848,7 +918,7 @@ class MainWindow(QMainWindow):
         cur.insertHtml(line_html)
         self.log.setTextCursor(cur)
         self.log.ensureCursorVisible()
-        QApplication.processEvents()
+        QApplication.processEvents()  # keep the bar animating during long copies
 
     def _clear_progress(self) -> None:
         if not self._progress_on:
@@ -859,7 +929,7 @@ class MainWindow(QMainWindow):
             QTextCursor.MoveOperation.StartOfBlock, QTextCursor.MoveMode.KeepAnchor
         )
         cur.removeSelectedText()
-        cur.deletePreviousChar()  # drop the now-empty line's separator
+        cur.deletePreviousChar()
         self._progress_on = False
 
     def _ensure_paths(self):
@@ -869,7 +939,6 @@ class MainWindow(QMainWindow):
             return None
         return derive_paths(Path(gta), use_mods=self.config.use_mods_folder)
 
-    # ----- button actions ----- #
     def choose_gta_path(self) -> None:
         chosen = QFileDialog.getExistingDirectory(self, T("choose_gta_dialog"))
         if not chosen:
@@ -920,9 +989,8 @@ class MainWindow(QMainWindow):
         self.config.save()
         self._refresh_labels()
 
-    # ----- drop callback ----- #
     def on_drop(self, srcs: list[Path]) -> None:
-        if self._busy:  # an install is already running (event loop is pumped)
+        if self._busy:
             return
         if not srcs:
             self.log_line("INFO", "err", T("drop_nothing"))
@@ -931,56 +999,101 @@ class MainWindow(QMainWindow):
         if not paths:
             return
 
-        # Classify everything first: detect DLC packs vs ELS files per dropped
-        # item so we know how many files of each kind there are. The "replace
-        # all / keep all" buttons are only offered when a kind has >1 file.
-        dlc_packs: list[Path] = []
-        els_srcs: list[Path] = []
-        unknown: list[Path] = []
-        for src in srcs:
-            packs = find_dlc_packs(src)
-            if packs:
-                dlc_packs.extend(packs)
-            elif is_els_source(src):
-                els_srcs.append(src)
-            else:
-                unknown.append(src)
-
-        els_count = sum(len(list_els_xmls(s)) for s in els_srcs)
-        # One decider per kind so a "to all" choice carries across the drop.
-        dlc_decide = _ReplaceDecider(
-            self, "dlc_replace_body", offer_all=len(dlc_packs) > 1
-        )
-        els_decide = _ReplaceDecider(
-            self, "els_replace_body", offer_all=els_count > 1
-        )
-
         self._set_busy(True)
+        temp_dirs: list[Path] = []
         try:
+            scan_items = self._expand_sources(srcs, temp_dirs)
+
+            dlc_packs: list[Path] = []
+            els_jobs: list[tuple[Path, list[Path]]] = []
+            unknown: list[str] = []
+            for path, display, deep in scan_items:
+                if deep:
+                    packs = find_dlc_packs_deep(path)
+                    has_els = bool(list_els_xmls(path))
+                    if packs:
+                        dlc_packs.extend(packs)
+                    if has_els:
+                        els_jobs.append((path, packs))
+                    if not packs and not has_els:
+                        unknown.append(display)
+                else:
+                    packs = find_dlc_packs(path)
+                    if packs:
+                        dlc_packs.extend(packs)
+                    elif is_els_source(path):
+                        els_jobs.append((path, []))
+                    else:
+                        unknown.append(display)
+
+            els_srcs: list[Path] = []
+            for path, packs in els_jobs:
+                chosen = self._resolve_els_source(path, packs)
+                if chosen is not None:
+                    els_srcs.append(chosen)
+
+            els_count = sum(len(list_els_xmls(s)) for s in els_srcs)
+            dlc_decide = _ReplaceDecider(
+                self, "dlc_replace_body", offer_all=len(dlc_packs) > 1
+            )
+            els_decide = _ReplaceDecider(
+                self, "els_replace_body", offer_all=els_count > 1
+            )
+
             for pack in dlc_packs:
                 try:
                     self._install_dlc_pack(pack, paths, dlc_decide)
-                except Exception as exc:  # never swallow a failure silently
+                except Exception as exc:
                     self.log_line("DLC", "err", T("unexpected_error", err=str(exc)))
             for src in els_srcs:
                 try:
                     self._install_els_src(src, paths, els_decide)
                 except Exception as exc:
                     self.log_line("ELS", "err", T("unexpected_error", err=str(exc)))
-            for src in unknown:
-                self.log_line("INFO", "err", T("drop_unknown", name=src.name))
+            for name in unknown:
+                self.log_line("INFO", "err", T("drop_unknown", name=name))
         finally:
             self._set_busy(False)
+            for d in temp_dirs:
+                shutil.rmtree(d, ignore_errors=True)
+
+    def _expand_sources(
+        self, srcs: list[Path], temp_dirs: list[Path]
+    ) -> list[tuple[Path, str, bool]]:
+        items: list[tuple[Path, str, bool]] = []
+        for src in srcs:
+            if not archive.is_archive(src):
+                items.append((src, src.name, False))
+                continue
+            self.log_line("INFO", "work", T("archive_extracting", name=src.name))
+            try:
+                dest = archive.extract_to_temp(src)
+            except archive.CorruptArchive:
+                self.log_line("INFO", "err", T("archive_corrupt", name=src.name))
+                continue
+            except archive.UnsupportedArchive as exc:
+                self.log_line(
+                    "INFO", "err", T("archive_unsupported", name=src.name, fmt=str(exc))
+                )
+                continue
+            except archive.ArchiveError as exc:
+                self.log_line(
+                    "INFO", "err", T("archive_failed", name=src.name, err=str(exc))
+                )
+                continue
+            temp_dirs.append(dest.parent)
+            self.log_line("INFO", "ok", T("archive_extracted", name=src.name))
+            items.append((dest, src.name, True))
+        return items
 
     def _set_busy(self, busy: bool) -> None:
-        """Block further input while a copy runs (the event loop is pumped)."""
         self._busy = busy
         self.zone.setAcceptDrops(not busy)
         for w in (
             self.zone,
             self.choose_btn,
             self.manage_btn,
-            self.lang_btn,
+            self.settings_btn,
             self.mods_checkbox,
             self.xml_btn,
             self.clear_xml_btn,
@@ -1004,6 +1117,21 @@ class MainWindow(QMainWindow):
         if result.ok and result.dlc_name:
             self._handle_dlclist_update(result.dlc_name)
 
+    def _resolve_els_source(self, src, pack_folders):
+        groups = group_els_by_folder(src)
+        if len(groups) <= 1 or not els_has_name_collision(groups):
+            return src
+        if not pack_folders:
+            pack_folders = find_dlc_packs_deep(src)
+        default = closest_els_folder(sorted(groups), pack_folders)
+        dlg = ElsFolderDialog(src, groups, default, parent=self)
+        if dlg.exec() != QDialog.Accepted or dlg.chosen() is None:
+            self.log_line("ELS", "info", T("els_variant_skipped"))
+            return None
+        chosen = dlg.chosen()
+        self.log_line("ELS", "info", T("els_variant_chosen", folder=chosen.name))
+        return chosen
+
     def _install_els_src(self, src, paths, decide) -> None:
         log = self._group_logger("ELS")
         progress = lambda done, total, name: self._show_progress(
@@ -1013,7 +1141,6 @@ class MainWindow(QMainWindow):
         result = install_els(src, target, log, resolve=decide, progress=progress)
         self.log_line("ELS", "ok" if result.ok else "err", result.message)
 
-    # ----- dlclist.xml handling ----- #
     def _handle_dlclist_update(self, dlc_name: str) -> None:
         xml = self.config.dlclist_xml_path
         if xml and Path(xml).is_file():
@@ -1032,10 +1159,6 @@ class MainWindow(QMainWindow):
 
 
 def _set_windows_app_id() -> None:
-    """Tell Windows to treat AddonV as its own app in the taskbar.
-
-    Without this, the taskbar groups under python.exe and shows its icon.
-    """
     if sys.platform != "win32":
         return
     try:

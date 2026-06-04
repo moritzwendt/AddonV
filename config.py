@@ -1,4 +1,3 @@
-"""Persistent user settings (JSON-backed)."""
 from __future__ import annotations
 
 import json
@@ -15,7 +14,9 @@ class Config:
     use_mods_folder: bool = True
     dlclist_xml_path: str = ""
     language: str = ""
-    install_log: list = field(default_factory=list)
+    manage_sort: str = "name"
+    save_terminal_history: bool = True
+    terminal_history: list = field(default_factory=list)
 
     @classmethod
     def load(cls) -> "Config":

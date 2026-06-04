@@ -1,19 +1,6 @@
-"""Mod-installation logic per mod type.
-
-Each installer takes a source `Path` (a dropped file or folder) and a
-target directory, validates the source, then copies it into place. The
-returned `InstallResult` carries a status flag, a human-readable message
-and (for DLCs) the detected pack name so the GUI can update dlclist.xml.
-
-When a target already exists, installers do **not** overwrite silently:
-they return `conflict=True` so the GUI can ask the user whether to replace.
-Calling again with `overwrite=True` then performs the replacement.
-
-User-facing strings are looked up via `i18n.T` so messages follow the
-current language.
-"""
 from __future__ import annotations
 
+import os
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -24,17 +11,11 @@ from i18n import T
 
 LogFn = Callable[[str], None]
 
-# Given the name of an item that already exists at the target, return True to
-# replace it or False to keep the existing one. Lets the caller (the GUI) ask
-# the user per item, with "yes/no to all" handled inside the resolver.
 ConflictResolver = Callable[[str], bool]
 
-# Reports copy progress: (bytes_done, bytes_total, current_file_name). Called
-# repeatedly during a copy so the GUI can animate a progress bar and keep the
-# event loop alive. Receiving a total of 0 means "nothing to copy".
 ProgressFn = Callable[[int, int, str], None]
 
-_CHUNK = 4 * 1024 * 1024  # 4 MiB copy block — small enough to keep the UI live
+_CHUNK = 4 * 1024 * 1024
 
 
 @dataclass
@@ -46,12 +27,10 @@ class InstallResult:
 
 
 def _iter_files(root: Path) -> list[Path]:
-    """All files under `root`, recursively (no directories)."""
     return [p for p in root.rglob("*") if p.is_file()]
 
 
 def _human_size(num: int) -> str:
-    """Format a byte count compactly, e.g. 1536 -> '1.5 KB'."""
     size = float(num)
     for unit in ("B", "KB", "MB", "GB", "TB"):
         if size < 1024 or unit == "TB":
@@ -67,15 +46,9 @@ def _copy_file(
     total: int,
     progress: Optional[ProgressFn],
 ) -> int:
-    """Copy `src` to `dst` in chunks, reporting cumulative progress.
-
-    `done` is the byte count copied before this file; returns the new
-    cumulative count afterwards. Copying in chunks (rather than one big
-    `copy2`) lets the caller pump its event loop between blocks so even a
-    single huge file doesn't freeze the UI.
-    """
     dst.parent.mkdir(parents=True, exist_ok=True)
     name = src.name
+    # copy in chunks so progress can update and the ui stays responsive on huge files
     with open(src, "rb") as fsrc, open(dst, "wb") as fdst:
         while True:
             chunk = fsrc.read(_CHUNK)
@@ -90,13 +63,6 @@ def _copy_file(
 
 
 def find_dlc_packs(src: Path) -> list[Path]:
-    """Return every DLC pack folder reachable from `src`.
-
-    A DLC pack is a folder containing a `dlc.rpf` file. Accept either the
-    pack folder itself or a wrapper folder one level up that contains one
-    or more pack folders, so dropping a single archive folder with several
-    addons installs all of them.
-    """
     if not src.is_dir():
         return []
     if (src / "dlc.rpf").exists():
@@ -108,6 +74,20 @@ def find_dlc_packs(src: Path) -> list[Path]:
     return [c for c in children if (c / "dlc.rpf").exists()]
 
 
+def find_dlc_packs_deep(src: Path) -> list[Path]:
+    if not src.is_dir():
+        return []
+    seen: set[Path] = set()
+    packs: list[Path] = []
+    for root, _dirs, files in os.walk(src):
+        if any(name.lower() == "dlc.rpf" for name in files):
+            folder = Path(root)
+            if folder not in seen:
+                seen.add(folder)
+                packs.append(folder)
+    return packs
+
+
 def install_dlc(
     pack: Path,
     dlcpacks_dir: Path,
@@ -115,12 +95,6 @@ def install_dlc(
     overwrite: bool = False,
     progress: Optional[ProgressFn] = None,
 ) -> InstallResult:
-    """Install a single, already-resolved DLC pack folder.
-
-    Use `find_dlc_packs` first to turn a dropped path into pack folders.
-    Copies file-by-file (reporting `progress`) instead of one opaque
-    `copytree`, so the GUI can show a live progress bar.
-    """
     target = dlcpacks_dir / pack.name
     if target.exists() and not overwrite:
         return InstallResult(
@@ -143,7 +117,7 @@ def install_dlc(
             rel = f.relative_to(pack)
             done = _copy_file(f, target / rel, done, total, progress)
     except OSError as exc:
-        # Clean up a half-copied folder so it isn't mistaken for a good install.
+        # remove the half copied folder so it is not mistaken for a good install
         if target.exists():
             shutil.rmtree(target, ignore_errors=True)
         return InstallResult(
@@ -157,15 +131,10 @@ def install_dlc(
 @dataclass
 class InstalledDlc:
     name: str
-    added: float  # folder creation time (POSIX seconds); 0.0 if unknown
+    added: float
 
 
 def list_installed_dlc_info(dlcpacks_dir: Path) -> list[InstalledDlc]:
-    """Return installed DLC packs with their install date (folder ctime).
-
-    The folder is (re)created when a pack is installed, so its creation time
-    on Windows doubles as the "date added", and updates on a replace.
-    """
     if not dlcpacks_dir.is_dir():
         return []
     try:
@@ -185,16 +154,10 @@ def list_installed_dlc_info(dlcpacks_dir: Path) -> list[InstalledDlc]:
 
 
 def list_installed_dlcs(dlcpacks_dir: Path) -> list[str]:
-    """Return the names of installed DLC packs (folders containing dlc.rpf)."""
     return sorted(d.name for d in list_installed_dlc_info(dlcpacks_dir))
 
 
 def uninstall_dlc(name: str, dlcpacks_dir: Path, log: LogFn) -> InstallResult:
-    """Delete an installed DLC pack folder from `dlcpacks_dir`.
-
-    Only removes the files on disk; the GUI is responsible for also dropping
-    the matching `dlclist.xml` entry via `dlclist.remove_from_file`.
-    """
     target = dlcpacks_dir / name
     if not target.is_dir():
         return InstallResult(False, T("dlc_not_installed", name=name), name)
@@ -208,18 +171,20 @@ def uninstall_dlc(name: str, dlcpacks_dir: Path, log: LogFn) -> InstallResult:
     return InstallResult(True, T("dlc_removed", name=name), name)
 
 
+_ELS_MARKERS = ("<vcf", "<elsteam", "<sirens", "<sirensettings")
+
+
 def _looks_like_els_xml(path: Path) -> bool:
     if path.suffix.lower() != ".xml":
         return False
     try:
-        head = path.read_text(encoding="utf-8", errors="ignore")[:2048].lower()
+        head = path.read_text(encoding="utf-8", errors="ignore")[:8192].lower()
     except OSError:
         return False
-    return "<vcfroot" in head or "<vcf " in head or "<elsteam" in head
+    return any(marker in head for marker in _ELS_MARKERS)
 
 
 def list_els_xmls(src: Path) -> list[Path]:
-    """Return every ELS-VCF XML file reachable from `src` (file or folder)."""
     if src.is_file():
         return [src] if _looks_like_els_xml(src) else []
     if src.is_dir():
@@ -230,12 +195,46 @@ def list_els_xmls(src: Path) -> list[Path]:
     return []
 
 
-def is_els_source(src: Path) -> bool:
-    """True if `src` is an ELS-VCF XML file or a folder that contains one.
+def group_els_by_folder(src: Path) -> dict[Path, list[Path]]:
+    groups: dict[Path, list[Path]] = {}
+    for xml in list_els_xmls(src):
+        groups.setdefault(xml.parent, []).append(xml)
+    return groups
 
-    Lets the GUI auto-route a dropped path: anything that isn't a DLC pack
-    but looks like ELS goes to the ELS installer.
-    """
+
+def els_has_name_collision(groups: dict[Path, list[Path]]) -> bool:
+    seen: dict[str, set[Path]] = {}
+    for folder, files in groups.items():
+        for f in files:
+            seen.setdefault(f.name.lower(), set()).add(folder)
+    return any(len(folders) > 1 for folders in seen.values())
+
+
+def _path_distance(a: Path, b: Path) -> int:
+    # folder steps between two paths up to the common ancestor then down
+    ap, bp = a.parts, b.parts
+    common = 0
+    for x, y in zip(ap, bp):
+        if x != y:
+            break
+        common += 1
+    return (len(ap) - common) + (len(bp) - common)
+
+
+def closest_els_folder(folders: list[Path], pack_folders: list[Path]) -> Path:
+    if pack_folders:
+        return min(
+            folders,
+            key=lambda f: (
+                min(_path_distance(f, p) for p in pack_folders),
+                len(f.parts),
+                str(f).lower(),
+            ),
+        )
+    return min(folders, key=lambda f: (len(f.parts), str(f).lower()))
+
+
+def is_els_source(src: Path) -> bool:
     if src.is_file():
         return _looks_like_els_xml(src)
     if src.is_dir():
@@ -253,12 +252,6 @@ def install_els(
     resolve: Optional[ConflictResolver] = None,
     progress: Optional[ProgressFn] = None,
 ) -> InstallResult:
-    """Install one or more ELS-VCF XML files into `els_vcfs_dir`.
-
-    Conflicts are resolved up front (via `resolve(name)`, with "yes/no to all"
-    handled inside the resolver); files the user keeps are skipped. The
-    remaining files are then copied while reporting `progress`.
-    """
     if not src.exists():
         return InstallResult(False, T("els_src_missing", path=str(src)))
 
@@ -276,8 +269,7 @@ def install_els(
         if not xmls:
             return InstallResult(False, T("els_no_xmls"))
 
-    # Decide everything first, then copy — keeps the byte total exact and the
-    # progress bar smooth (no dialogs interrupting the copy phase).
+    # resolve all conflicts first then copy so the total is exact and no dialog interrupts
     to_copy = []
     skipped = 0
     for x in xmls:

@@ -22,6 +22,13 @@ A small open-source GUI tool to install GTA V single-player mods
 - Optional direct-install mode (with explicit warning)
 - DLC drop zone — copies into `dlcpacks/` and patches `dlclist.xml`
 - ELS drop zone — copies ELS-VCF files into `ELS/pack_default/`
+- Archive drop — drop a `.zip`/`.oiv`/`.7z`/`.rar`; it's extracted to a temp
+  folder, scanned for DLC packs and ELS files, installed, then cleaned up. The
+  real format is detected from the file's contents (a mislabelled archive still
+  opens), and corrupt files are reported as such. ZIP/OIV and 7z work out of the
+  box; installing [7-Zip](https://7-zip.org) enables every format including RAR.
+- Mod manager — enable/disable packs (commented out in `dlclist.xml`),
+  reorder the load order by drag-and-drop, repair the list, and spot duplicates
 - Persistent config in `%USERPROFILE%\.addonv\config.json`
 
 ## Build it yourself

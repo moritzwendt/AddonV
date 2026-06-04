@@ -1,15 +1,27 @@
-# -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec — builds a windowed `AddonV` onedir distribution."""
+
+from PyInstaller.utils.hooks import collect_all
 
 block_cipher = None
+
+datas = [('logo.png', '.')]
+binaries = []
+hiddenimports = []
+
+try:
+    _d, _b, _h = collect_all('py7zr')
+    datas += _d
+    binaries += _b
+    hiddenimports += _h
+except Exception:
+    pass
 
 
 a = Analysis(
     ['main.py'],
     pathex=[],
-    binaries=[],
-    datas=[('logo.png', '.')],
-    hiddenimports=[],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

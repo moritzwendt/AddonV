@@ -154,15 +154,39 @@ def install_dlc(
     )
 
 
-def list_installed_dlcs(dlcpacks_dir: Path) -> list[str]:
-    """Return the names of installed DLC packs (folders containing dlc.rpf)."""
+@dataclass
+class InstalledDlc:
+    name: str
+    added: float  # folder creation time (POSIX seconds); 0.0 if unknown
+
+
+def list_installed_dlc_info(dlcpacks_dir: Path) -> list[InstalledDlc]:
+    """Return installed DLC packs with their install date (folder ctime).
+
+    The folder is (re)created when a pack is installed, so its creation time
+    on Windows doubles as the "date added", and updates on a replace.
+    """
     if not dlcpacks_dir.is_dir():
         return []
     try:
         children = [c for c in dlcpacks_dir.iterdir() if c.is_dir()]
     except OSError:
         return []
-    return sorted(c.name for c in children if (c / "dlc.rpf").exists())
+    out = []
+    for c in children:
+        if not (c / "dlc.rpf").exists():
+            continue
+        try:
+            added = c.stat().st_ctime
+        except OSError:
+            added = 0.0
+        out.append(InstalledDlc(c.name, added))
+    return out
+
+
+def list_installed_dlcs(dlcpacks_dir: Path) -> list[str]:
+    """Return the names of installed DLC packs (folders containing dlc.rpf)."""
+    return sorted(d.name for d in list_installed_dlc_info(dlcpacks_dir))
 
 
 def uninstall_dlc(name: str, dlcpacks_dir: Path, log: LogFn) -> InstallResult:

@@ -23,5 +23,5 @@ installer/AddonV.ico
 *.swp
 .DS_Store
 
-# Local config (per-user)
+# Local config
 .addonv/

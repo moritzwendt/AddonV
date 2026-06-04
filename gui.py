@@ -4,6 +4,7 @@ from __future__ import annotations
 import html
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QLocale
@@ -17,15 +18,18 @@ from PySide6.QtGui import (
     QTextCursor,
 )
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QApplication,
     QButtonGroup,
     QCheckBox,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
@@ -48,7 +52,7 @@ from installers import (
     install_els,
     is_els_source,
     list_els_xmls,
-    list_installed_dlcs,
+    list_installed_dlc_info,
     uninstall_dlc,
 )
 
@@ -101,9 +105,16 @@ class _ReplaceDecider:
     than one file is being installed) — for a single file they'd be pointless.
     """
 
-    def __init__(self, parent, body_key: str, offer_all: bool = False) -> None:
+    def __init__(
+        self,
+        parent,
+        body_key: str,
+        offer_all: bool = False,
+        title_key: str = "replace_title",
+    ) -> None:
         self._parent = parent
         self._body_key = body_key
+        self._title_key = title_key
         self._offer_all = offer_all
         self._all: bool | None = None  # None = keep asking
 
@@ -115,7 +126,7 @@ class _ReplaceDecider:
             buttons |= QMessageBox.YesToAll | QMessageBox.NoToAll
         reply = QMessageBox.question(
             self._parent,
-            T("replace_title"),
+            T(self._title_key),
             T(self._body_key, name=name),
             buttons,
             QMessageBox.No,
@@ -237,61 +248,344 @@ class DropZone(QFrame):
         self._on_drop(paths)
 
 
-class ManageModsDialog(QDialog):
-    """List installed DLC packs and let the user remove them.
+class _ModRow(QWidget):
+    """A modern, at-a-glance row for one installed DLC pack.
 
-    Removing a pack deletes its folder under `dlcpacks/` and, if a dlclist.xml
-    is configured, drops the matching `<Item>` entry too.
+    Shows a coloured status dot, the pack name, a meta line (date added) and one
+    or more state pills (e.g. "active", "disabled", "duplicate"). The widget is
+    translucent so the list's own selection highlight shows through behind it.
     """
+
+    def __init__(self, name: str, meta: str, dot_color: str, pills) -> None:
+        super().__init__()
+        self.setAttribute(Qt.WA_TranslucentBackground, True)
+        h = QHBoxLayout(self)
+        h.setContentsMargins(10, 7, 10, 7)
+        h.setSpacing(10)
+
+        dot = QLabel()
+        dot.setFixedSize(10, 10)
+        dot.setStyleSheet(f"background:{dot_color}; border-radius:5px;")
+        h.addWidget(dot, 0, Qt.AlignVCenter)
+
+        col = QVBoxLayout()
+        col.setSpacing(1)
+        name_lbl = QLabel(name)
+        name_lbl.setStyleSheet(
+            "color:#f0f0f0; font-weight:600; font-size:13px; background:transparent;"
+        )
+        meta_lbl = QLabel(meta)
+        meta_lbl.setStyleSheet("color:#8a8f94; font-size:11px; background:transparent;")
+        col.addWidget(name_lbl)
+        col.addWidget(meta_lbl)
+        h.addLayout(col, 1)
+
+        for text, fg, bg in pills:
+            pill = QLabel(text)
+            pill.setStyleSheet(
+                f"color:{fg}; background:{bg}; border-radius:8px; "
+                f"padding:2px 9px; font-size:11px; font-weight:600;"
+            )
+            h.addWidget(pill, 0, Qt.AlignVCenter)
+
+
+class ManageModsDialog(QDialog):
+    """List installed DLC packs and let the user manage them.
+
+    Per pack the user can enable/disable it, remove it, and (in load-order mode)
+    move it up or down. Disabling comments the entry out in dlclist.xml: the
+    folder stays on disk and the pack simply isn't loaded, so it reads as
+    "switched off", not "missing". A repair action reconciles dlclist.xml with
+    the folders actually present, and duplicate entries are flagged on sight.
+    """
+
+    # Per-item state, used to label the toggle button and colour the row.
+    _ACTIVE = "active"        # folder present, listed and loaded
+    _DISABLED = "disabled"    # folder present, listed but commented out
+    _UNLISTED = "unlisted"    # folder present but no dlclist.xml entry
+
+    # state -> (dot colour, pill text colour, pill background)
+    _STATE_STYLE = {
+        _ACTIVE:   ("#46c46a", "#7fe39a", "rgba(70,196,106,0.18)"),
+        _DISABLED: ("#8a8f94", "#b8bdc2", "rgba(138,143,148,0.18)"),
+        _UNLISTED: ("#e0a030", "#f0c060", "rgba(224,160,48,0.18)"),
+    }
+    _DUPLICATE_PILL = ("#ff8a7a", "rgba(224,85,69,0.22)")
 
     def __init__(self, dlcpacks_dir: Path, dlclist_xml: str, log_line, parent=None):
         super().__init__(parent)
         self._dlcpacks_dir = dlcpacks_dir
         self._dlclist_xml = dlclist_xml
         self._log_line = log_line  # (group, status, text) -> None
+        self._warned_dupes = False  # log the duplicate warning only once
 
         self.setWindowTitle(T("manage_dialog_title"))
         self.setModal(True)
-        self.resize(440, 360)
+        self.resize(540, 440)
 
         layout = QVBoxLayout(self)
-        self._list = QListWidget()
-        self._list.setStyleSheet("background-color: #1c1c1e; color: #ddd; border: 1px solid #444;")
-        self._list.itemSelectionChanged.connect(self._sync_buttons)
-        layout.addWidget(self._list)
+        layout.setSpacing(8)
 
+        # --- search + sort controls ---
+        top_row = QHBoxLayout()
+        self._search = QLineEdit()
+        self._search.setPlaceholderText(T("manage_search_placeholder"))
+        self._search.setClearButtonEnabled(True)
+        self._search.setStyleSheet(
+            "QLineEdit { background:#1c1c1e; color:#ddd; border:1px solid #444; "
+            "border-radius:6px; padding:5px 8px; }"
+        )
+        self._search.textChanged.connect(self._refresh)
+        self._sort_label = QLabel(T("manage_sort_label"))
+        self._sort_combo = QComboBox()
+        self._sort_combo.addItem(T("manage_sort_name"), "name")
+        self._sort_combo.addItem(T("manage_sort_date"), "date")
+        self._sort_combo.addItem(T("manage_sort_order"), "order")
+        self._sort_combo.currentIndexChanged.connect(self._refresh)
+        top_row.addWidget(self._search, 1)
+        top_row.addWidget(self._sort_label)
+        top_row.addWidget(self._sort_combo)
+        layout.addLayout(top_row)
+
+        # --- list (drag to reorder in load-order mode) ---
+        self._loading = False  # guards rowsMoved while _refresh rebuilds the list
+        self._list = QListWidget()
+        self._list.setStyleSheet(
+            "QListWidget { background:#1c1c1e; border:1px solid #444; "
+            "border-radius:6px; outline:0; }"
+            "QListWidget::item { border-bottom:1px solid #2a2a2c; }"
+            "QListWidget::item:selected { background:#2d4a63; }"
+        )
+        self._list.itemSelectionChanged.connect(self._sync_buttons)
+        self._list.model().rowsMoved.connect(self._on_rows_moved)
+        layout.addWidget(self._list, 1)
+
+        # --- action buttons ---
         btn_row = QHBoxLayout()
+        self._toggle_btn = QPushButton(T("manage_disable_btn"))
+        self._toggle_btn.clicked.connect(self._toggle_selected)
         self._remove_btn = QPushButton(T("manage_remove_btn"))
         self._remove_btn.clicked.connect(self._remove_selected)
+        self._repair_btn = QPushButton(T("manage_repair_btn"))
+        self._repair_btn.clicked.connect(self._repair)
         close_btn = QPushButton(T("manage_close_btn"))
         close_btn.clicked.connect(self.accept)
+        btn_row.addWidget(self._toggle_btn)
         btn_row.addWidget(self._remove_btn)
         btn_row.addStretch(1)
+        btn_row.addWidget(self._repair_btn)
         btn_row.addWidget(close_btn)
         layout.addLayout(btn_row)
 
         self._refresh()
 
-    def _refresh(self) -> None:
-        self._list.clear()
-        names = list_installed_dlcs(self._dlcpacks_dir)
-        if names:
-            for name in names:
-                self._list.addItem(QListWidgetItem(name))
-        else:
-            placeholder = QListWidgetItem(T("manage_empty"))
-            placeholder.setFlags(Qt.NoItemFlags)
-            self._list.addItem(placeholder)
+    def _has_dlclist(self) -> bool:
+        return bool(self._dlclist_xml) and Path(self._dlclist_xml).is_file()
+
+    def _read_dlclist(self) -> str:
+        """dlclist.xml text, or '' if none is configured / it can't be read."""
+        if not self._has_dlclist():
+            return ""
+        try:
+            return Path(self._dlclist_xml).read_text(encoding="utf-8")
+        except OSError:
+            return ""
+
+    def _sort_mode(self) -> str:
+        return self._sort_combo.currentData()
+
+    def _refresh(self, *_) -> None:  # *_ swallows signal args (combo index / text)
+        keep = self._selected_name()  # restore selection across the rebuild
+        self._loading = True
+        try:
+            self._populate(keep)
+        finally:
+            self._loading = False
         self._sync_buttons()
 
+    def _populate(self, keep: str | None) -> None:
+        self._list.clear()
+
+        text = self._read_dlclist()
+        disabled = set(dlclist.list_disabled_entries(text))
+        active = set(dlclist.list_active_entries(text))
+        dupes = set(dlclist.find_duplicate_entries(text))
+        order = {name: i for i, name in enumerate(dlclist.list_ordered_entries(text))}
+
+        if dupes and not self._warned_dupes:
+            for name in sorted(dupes):
+                self._log_line("XML", "err", T("dlclist_duplicate", name=name))
+            self._warned_dupes = True
+
+        infos = list_installed_dlc_info(self._dlcpacks_dir)
+        query = self._search.text().strip().lower()
+        if query:
+            infos = [d for d in infos if query in d.name.lower()]
+
+        mode = self._sort_mode()
+        if mode == "date":
+            infos.sort(key=lambda d: d.added, reverse=True)  # newest first
+        elif mode == "order":
+            # Load order from dlclist.xml; packs with no entry sink to the bottom.
+            infos.sort(key=lambda d: (order.get(d.name, len(order)), d.name.lower()))
+        else:
+            infos.sort(key=lambda d: d.name.lower())
+
+        if not infos:
+            empty_key = "manage_no_matches" if query else "manage_empty"
+            placeholder = QListWidgetItem(T(empty_key))
+            placeholder.setFlags(Qt.NoItemFlags)
+            self._list.addItem(placeholder)
+            return
+
+        for d in infos:
+            if d.name in disabled:
+                state = self._DISABLED
+            elif d.name in active:
+                state = self._ACTIVE
+            else:
+                state = self._UNLISTED
+            dot, pill_fg, pill_bg = self._STATE_STYLE[state]
+            pills = []
+            if self._has_dlclist():
+                pills.append((T(f"manage_state_{state}"), pill_fg, pill_bg))
+            if d.name in dupes:
+                pills.append((T("manage_state_duplicate"), *self._DUPLICATE_PILL))
+
+            when = datetime.fromtimestamp(d.added).strftime("%Y-%m-%d %H:%M")
+            meta = T("manage_added", date=when)
+            row = _ModRow(d.name, meta, dot, pills)
+
+            item = QListWidgetItem()
+            item.setData(Qt.UserRole, d.name)
+            item.setData(Qt.UserRole + 1, state)
+            item.setSizeHint(row.sizeHint())
+            self._list.addItem(item)
+            self._list.setItemWidget(item, row)
+            if d.name == keep:
+                self._list.setCurrentItem(item)
+
     def _sync_buttons(self) -> None:
-        self._remove_btn.setEnabled(self._selected_name() is not None)
+        name = self._selected_name()
+        state = self._selected_state()
+        self._remove_btn.setEnabled(name is not None)
+        self._repair_btn.setEnabled(self._has_dlclist())
+        # Disabling/enabling only makes sense when a dlclist.xml is configured.
+        self._toggle_btn.setEnabled(name is not None and self._has_dlclist())
+        if state == self._ACTIVE:
+            self._toggle_btn.setText(T("manage_disable_btn"))
+        else:
+            self._toggle_btn.setText(T("manage_enable_btn"))
+        # Drag-to-reorder is only meaningful when the list shows the real load
+        # order in full (load-order mode, no search filtering the view).
+        can_reorder = (
+            self._has_dlclist()
+            and self._sort_mode() == "order"
+            and not self._search.text().strip()
+        )
+        self._list.setDragDropMode(
+            QAbstractItemView.InternalMove
+            if can_reorder
+            else QAbstractItemView.NoDragDrop
+        )
+
+    def _selected_state(self) -> str | None:
+        item = self._list.currentItem()
+        if item is None or not (item.flags() & Qt.ItemIsSelectable):
+            return None
+        return item.data(Qt.UserRole + 1)
 
     def _selected_name(self) -> str | None:
         item = self._list.currentItem()
         if item is None or not (item.flags() & Qt.ItemIsSelectable):
             return None
-        return item.text()
+        return item.data(Qt.UserRole)
+
+    def _on_rows_moved(self, *_) -> None:
+        """Persist a drag-reorder: write the list's new order into dlclist.xml."""
+        if self._loading or not self._has_dlclist():
+            return
+        listed = set(dlclist.list_ordered_entries(self._read_dlclist()))
+        order = []
+        for i in range(self._list.count()):
+            name = self._list.item(i).data(Qt.UserRole)
+            if name in listed:
+                order.append(name)
+        try:
+            dlclist.set_order_in_file(Path(self._dlclist_xml), order)
+        except Exception as exc:
+            self._log_line("XML", "err", T("dlclist_error", err=str(exc)))
+        self._refresh()  # rebuild the row widgets the internal move discarded
+
+    def _toggle_selected(self) -> None:
+        name = self._selected_name()
+        if name is None or not self._has_dlclist():
+            return
+        path = Path(self._dlclist_xml)
+        try:
+            if self._selected_state() == self._ACTIVE:
+                if dlclist.disable_in_file(path, name):
+                    self._log_line("XML", "ok", T("dlclist_disabled", name=name))
+            else:
+                # Re-enable: uncomment if disabled, otherwise add a fresh entry.
+                changed = dlclist.enable_in_file(path, name)
+                if not changed:
+                    changed = dlclist.update_file(path, name)
+                if changed:
+                    self._log_line("XML", "ok", T("dlclist_enabled", name=name))
+        except Exception as exc:
+            self._log_line("XML", "err", T("dlclist_error", err=str(exc)))
+        self._refresh()
+
+    def _repair(self) -> None:
+        """Reconcile dlclist.xml with the folders actually present.
+
+        Folders without an entry are re-added automatically; entries whose
+        folder is gone are removed only after the user confirms (per item, with
+        a "to all" shortcut).
+        """
+        if not self._has_dlclist():
+            return
+        path = Path(self._dlclist_xml)
+        text = self._read_dlclist()
+        registered = set(dlclist.list_entries(text))
+        installed = {d.name for d in list_installed_dlc_info(self._dlcpacks_dir)}
+        orphans = sorted(installed - registered)   # folder present, no entry
+        missing = sorted(registered - installed)   # entry present, folder gone
+
+        if not orphans and not missing:
+            self._log_line("XML", "info", T("repair_none"))
+            return
+
+        added = 0
+        for name in orphans:
+            try:
+                if dlclist.update_file(path, name):
+                    self._log_line("XML", "ok", T("repair_added", name=name))
+                    added += 1
+            except Exception as exc:
+                self._log_line("XML", "err", T("dlclist_error", err=str(exc)))
+
+        removed = kept = 0
+        decide = _ReplaceDecider(
+            self, "repair_missing_body",
+            offer_all=len(missing) > 1, title_key="repair_missing_title",
+        )
+        for name in missing:
+            if not decide(name):
+                kept += 1
+                continue
+            try:
+                if dlclist.remove_from_file(path, name):
+                    self._log_line("XML", "ok", T("repair_removed", name=name))
+                    removed += 1
+            except Exception as exc:
+                self._log_line("XML", "err", T("dlclist_error", err=str(exc)))
+
+        self._log_line(
+            "XML", "info", T("repair_summary", added=added, removed=removed, kept=kept)
+        )
+        self._refresh()
 
     def _remove_selected(self) -> None:
         name = self._selected_name()

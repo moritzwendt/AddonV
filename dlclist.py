@@ -127,6 +127,72 @@ def enable_dlc_entry(xml_text: str, dlc_name: str) -> str:
     return pattern.sub(r"\1", xml_text, count=1)
 
 
+# --- profile blocks: a profile's packs get commented out together as one block,
+# wrapped in start/end marker comments that name the profile (so the user can see,
+# above and below the commented entries, which profile they belong to). ---
+_PROFILE_START = "ADDONV_START:"
+_PROFILE_END = "ADDONV_END:"
+
+
+def _item_indent(xml_text: str, paths_match) -> str:
+    existing = _EXISTING_ITEM_INDENT_RE.search(xml_text)
+    if existing:
+        return existing.group(1)
+    paths_indent = paths_match.group(1).lstrip("\n\r")
+    return (paths_indent * 2) if paths_indent else "\t\t"
+
+
+def comment_profile_block(xml_text: str, profile_id: str, profile_name: str,
+                          dlc_names: list[str]) -> str:
+    wanted = set(dlc_names)
+    present = [n for n in list_ordered_entries(xml_text) if n in wanted]
+    seen: set[str] = set()
+    present = [n for n in present if not (n in seen or seen.add(n))]
+    if not present:
+        return xml_text
+    for n in present:
+        xml_text = remove_dlc_entry(xml_text, n)
+    match = _PATHS_CLOSE_RE.search(xml_text)
+    if not match:
+        raise ValueError(T("dlclist_paths_close_missing"))
+    indent = _item_indent(xml_text, match)
+    lines = [f"{indent}<!-- {_PROFILE_START}{profile_id} | Profil: {profile_name} -->"]
+    for n in present:
+        lines.append(f"{indent}<!-- <Item>dlcpacks:/{n}/</Item> -->")
+    lines.append(f"{indent}<!-- {_PROFILE_END}{profile_id} | Profil: {profile_name} -->")
+    block = "\n" + "\n".join(lines)
+    return xml_text[: match.start()] + block + xml_text[match.start():]
+
+
+def uncomment_profile_block(xml_text: str, profile_id: str) -> str:
+    pat = re.compile(
+        r"[ \t]*<!--\s*" + re.escape(_PROFILE_START + str(profile_id)) + r"\b.*?-->[ \t]*\r?\n?"
+        r"(.*?)"
+        r"[ \t]*<!--\s*" + re.escape(_PROFILE_END + str(profile_id)) + r"\b.*?-->[ \t]*\r?\n?",
+        re.DOTALL,
+    )
+    m = pat.search(xml_text)
+    if not m:
+        return xml_text
+    names = _ANY_ITEM_RE.findall(m.group(1))
+    xml_text = xml_text[: m.start()] + xml_text[m.end():]
+    for n in names:
+        xml_text = add_dlc_entry(xml_text, n)
+    return xml_text
+
+
+def comment_profile_in_file(xml_path: Path, profile_id: str, profile_name: str,
+                            dlc_names: list[str]) -> bool:
+    return _edit_file(
+        xml_path,
+        lambda text: comment_profile_block(text, profile_id, profile_name, dlc_names),
+    )
+
+
+def uncomment_profile_in_file(xml_path: Path, profile_id: str) -> bool:
+    return _edit_file(xml_path, lambda text: uncomment_profile_block(text, profile_id))
+
+
 def update_file(xml_path: Path, dlc_name: str) -> bool:
     return _edit_file(xml_path, lambda text: add_dlc_entry(text, dlc_name))
 

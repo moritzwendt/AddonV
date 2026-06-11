@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
@@ -128,28 +130,88 @@ def install_dlc(
     )
 
 
+def install_path(
+    src: Path,
+    target_dir: Path,
+    log: LogFn,
+    overwrite: bool = False,
+    progress: Optional[ProgressFn] = None,
+) -> InstallResult:
+    """Copy a dropped file or folder verbatim into target_dir (custom drop zone).
+
+    Unlike install_dlc this does no detection — the user routed it here on purpose, so
+    the item keeps its name and is copied as-is. Returns conflict=True (without copying)
+    when the destination already exists and overwrite is False.
+    """
+    dest = target_dir / src.name
+    if dest.exists() and not overwrite:
+        return InstallResult(
+            False, T("zone_exists", name=src.name), src.name, conflict=True
+        )
+    log(T("zone_installing", name=src.name))
+    try:
+        target_dir.mkdir(parents=True, exist_ok=True)
+        if src.is_dir():
+            files = _iter_files(src)
+            total = sum(f.stat().st_size for f in files)
+            if dest.exists():
+                shutil.rmtree(dest)
+            done = 0
+            if progress is not None:
+                progress(0, total, src.name)
+            for f in files:
+                rel = f.relative_to(src)
+                done = _copy_file(f, dest / rel, done, total, progress)
+        else:
+            total = src.stat().st_size
+            if dest.exists():
+                dest.unlink()
+            _copy_file(src, dest, 0, total, progress)
+    except OSError as exc:
+        if dest.exists():
+            if dest.is_dir():
+                shutil.rmtree(dest, ignore_errors=True)
+            else:
+                try:
+                    dest.unlink()
+                except OSError:
+                    pass
+        return InstallResult(
+            False, T("zone_copy_failed", name=src.name, err=str(exc)), src.name
+        )
+    return InstallResult(
+        True, T("zone_installed", name=src.name, size=_human_size(total)), src.name
+    )
+
+
 @dataclass
 class InstalledDlc:
     name: str
-    added: float
+    created: float   # pack folder creation time (st_ctime — birth time on Windows)
 
 
 def list_installed_dlc_info(dlcpacks_dir: Path) -> list[InstalledDlc]:
-    if not dlcpacks_dir.is_dir():
-        return []
+    # os.scandir is much faster than iterdir+stat: on Windows the DirEntry already
+    # carries is_dir()/stat() from the directory read, so the only extra syscall per
+    # folder is the dlc.rpf existence check.
+    out: list[InstalledDlc] = []
     try:
-        children = [c for c in dlcpacks_dir.iterdir() if c.is_dir()]
+        with os.scandir(dlcpacks_dir) as it:
+            for entry in it:
+                try:
+                    if not entry.is_dir():
+                        continue
+                except OSError:
+                    continue
+                if not os.path.exists(os.path.join(entry.path, "dlc.rpf")):
+                    continue
+                try:
+                    created = entry.stat().st_ctime
+                except OSError:
+                    created = 0.0
+                out.append(InstalledDlc(entry.name, created))
     except OSError:
         return []
-    out = []
-    for c in children:
-        if not (c / "dlc.rpf").exists():
-            continue
-        try:
-            added = c.stat().st_ctime
-        except OSError:
-            added = 0.0
-        out.append(InstalledDlc(c.name, added))
     return out
 
 
@@ -200,6 +262,99 @@ def group_els_by_folder(src: Path) -> dict[Path, list[Path]]:
     for xml in list_els_xmls(src):
         groups.setdefault(xml.parent, []).append(xml)
     return groups
+
+
+@dataclass
+class InstalledEls:
+    path: Path
+    name: str
+    mtime: float    # copy time — set by the install (source mtime is not preserved)
+
+
+def list_installed_els(els_root: Path) -> list[InstalledEls]:
+    # every els-vcf xml currently sitting under the game's ELS folder, with the
+    # time it was copied in. mirrors list_els_xmls but keeps the mtime per file.
+    out: list[InstalledEls] = []
+    if not els_root.is_dir():
+        return out
+    try:
+        candidates = list(els_root.rglob("*.xml"))
+    except OSError:
+        return out
+    for x in candidates:
+        if not _looks_like_els_xml(x):
+            continue
+        # skip files a profile has stashed in its "<name> unused" folder — they are
+        # off (not loaded by the game) so they must not count as installed/active.
+        if any(part.lower().endswith(" unused") for part in x.relative_to(els_root).parts[:-1]):
+            continue
+        try:
+            mtime = x.stat().st_mtime
+        except OSError:
+            continue
+        out.append(InstalledEls(x, x.name, mtime))
+    return out
+
+
+def group_els_by_install_time(
+    files: list[InstalledEls], tolerance: float = 1.0
+) -> list[list[InstalledEls]]:
+    # files copied in one install share (bar milliseconds) the same mtime, so cluster
+    # by gap: a new group starts when the jump to the previous file exceeds `tolerance`.
+    # 1s honours the "same second" idea while bridging the sub-second jitter of a batch.
+    ordered = sorted(files, key=lambda f: f.mtime)
+    groups: list[list[InstalledEls]] = []
+    current: list[InstalledEls] = []
+    for f in ordered:
+        if current and f.mtime - current[-1].mtime > tolerance:
+            groups.append(current)
+            current = []
+        current.append(f)
+    if current:
+        groups.append(current)
+    return groups
+
+
+_NAME_SPLIT_RE = re.compile(r"[ _\-.]+")          # separators between words
+_CAMEL_RE = re.compile(r"(?<=[a-z])(?=[A-Z])")    # camelCase boundary
+_LETTER_DIGIT_RE = re.compile(r"(?<=[A-Za-z])(?=[0-9])")   # police2 -> police|2
+_NAME_TRIM = " _-.0123456789"                     # never end a label on these
+
+
+def _name_tokens(stem: str) -> list[str]:
+    s = _LETTER_DIGIT_RE.sub(" ", _CAMEL_RE.sub(" ", _NAME_SPLIT_RE.sub(" ", stem)))
+    return [t for t in s.split() if t]
+
+
+def derive_group_name(file_names: list[str]) -> str:
+    # a human label for an install group: the shared start of its file names
+    # (e.g. lapd1/lapd2/lapd3 -> "lapd"), or a lone file's own name. Returns "" when
+    # nothing sensible can be derived so the caller can fall back to the install date.
+    stems = [os.path.splitext(n)[0].strip() for n in file_names]
+    stems = [s for s in stems if s]
+    if not stems:
+        return ""
+    if len(stems) == 1:
+        return stems[0]
+    # 1) longest common prefix (case-insensitive), trimmed to a clean word boundary
+    common = os.path.commonprefix([s.lower() for s in stems])
+    prefix = stems[0][: len(common)]
+    # if the prefix slices through a word (some stem continues with an alnum char),
+    # cut back to the last separator so we don't keep a half word like "lapd_c"
+    if any(len(s) > len(prefix) and s[len(prefix)].isalnum() for s in stems):
+        sep = max(prefix.rfind(c) for c in " _-.")
+        if sep > 0:
+            prefix = prefix[:sep]
+    prefix = prefix.rstrip(_NAME_TRIM)
+    if len(prefix) >= 3:
+        return prefix
+    # 2) otherwise the most frequent leading token across the group
+    leads = [toks[0] for toks in (_name_tokens(s) for s in stems) if toks]
+    if leads:
+        winner, count = Counter(t.lower() for t in leads).most_common(1)[0]
+        if count >= 2 and len(winner) >= 2:
+            return next(t for t in leads if t.lower() == winner)
+    return ""
 
 
 def els_has_name_collision(groups: dict[Path, list[Path]]) -> bool:

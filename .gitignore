@@ -14,7 +14,7 @@ dist/
 # Inno Setup output
 installer/output/
 
-# Generated icon (built from logo.png by tools/build_icon.py)
+# Generated icon
 installer/AddonV.ico
 
 # Editor / IDE

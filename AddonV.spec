@@ -3,7 +3,7 @@ from PyInstaller.utils.hooks import collect_all
 
 block_cipher = None
 
-datas = [('logo.png', '.')]
+datas = [('logo.png', '.'), ('logo-trim.png', '.'), ('qml', 'qml')]
 binaries = []
 hiddenimports = []
 

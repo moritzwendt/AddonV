@@ -359,11 +359,9 @@ ApplicationWindow {
 
     component Eyebrow: Text {
         font.family: th.ui
-        font.pixelSize: 11
+        font.pixelSize: 12
         font.weight: Font.DemiBold
-        font.letterSpacing: 1.4
-        font.capitalization: Font.AllUppercase
-        color: th.faint
+        color: th.dim
         leftPadding: 6
     }
 
@@ -376,7 +374,6 @@ ApplicationWindow {
             text: parent.title
             color: th.textHi
             font.family: th.disp; font.pixelSize: 23; font.weight: Font.DemiBold
-            font.letterSpacing: -0.3
         }
         Text {
             visible: parent.subtitle.length > 0
@@ -468,13 +465,16 @@ ApplicationWindow {
 
                     RowLayout {
                         Layout.leftMargin: 14
-                        spacing: 2
+                        Layout.fillHeight: true
+                        spacing: 0
                         Repeater {
                             model: ["min", "max", "close"]
                             delegate: Rectangle {
                                 required property int index
                                 required property string modelData
-                                width: 30; height: 26; radius: 5
+                                Layout.fillHeight: true
+                                Layout.preferredWidth: 46
+                                radius: 0
                                 color: wma.containsMouse
                                        ? (modelData === "close" ? th.closeHover : root.rgba(Qt.rgba(1,1,1,1), 0.07))
                                        : "transparent"
@@ -557,8 +557,7 @@ ApplicationWindow {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: root.ui("nav_menu")
                                 color: th.mute
-                                font.family: th.ui; font.pixelSize: 10; font.weight: Font.DemiBold
-                                font.letterSpacing: 1.2; font.capitalization: Font.AllUppercase
+                                font.family: th.ui; font.pixelSize: 11; font.weight: Font.DemiBold
                                 opacity: sidebar.collapsed ? 0 : 1
                                 Behavior on opacity { NumberAnimation { duration: 150 } }
                                 visible: opacity > 0.01
@@ -1114,9 +1113,8 @@ ApplicationWindow {
                                 spacing: 2
                                 Text {
                                     text: root.ui("gta_eyebrow")
-                                    color: th.faint
-                                    font.family: th.ui; font.pixelSize: 10; font.weight: Font.DemiBold
-                                    font.letterSpacing: 0.8; font.capitalization: Font.AllUppercase
+                                    color: th.dim
+                                    font.family: th.ui; font.pixelSize: 11; font.weight: Font.DemiBold
                                 }
                                 Text {
                                     Layout.fillWidth: true
@@ -1393,9 +1391,8 @@ ApplicationWindow {
                                         spacing: 6
                                         Text {
                                             text: modelData.label
-                                            color: parent.parent.on ? th.text : th.faint
-                                            font.family: th.ui; font.pixelSize: 10; font.weight: Font.DemiBold
-                                            font.letterSpacing: 0.7; font.capitalization: Font.AllUppercase
+                                            color: parent.parent.on ? th.text : th.dim
+                                            font.family: th.ui; font.pixelSize: 11; font.weight: Font.DemiBold
                                         }
                                         AvIcon {
                                             visible: !parent.parent.on
@@ -1414,14 +1411,7 @@ ApplicationWindow {
                                     }
                                 }
                             }
-                            Text {
-                                Layout.preferredWidth: 56
-                                horizontalAlignment: Text.AlignRight
-                                text: root.ui("col_on")
-                                color: th.faint
-                                font.family: th.ui; font.pixelSize: 10; font.weight: Font.DemiBold
-                                font.letterSpacing: 0.7; font.capitalization: Font.AllUppercase
-                            }
+                            Item { Layout.preferredWidth: 56 }
                         }
                     }
 
@@ -1601,8 +1591,26 @@ ApplicationWindow {
                 return n
             }
 
+            property string sortKey: "added"
+            property string sortDir: "desc"
+            function setSort(key) {
+                if (key === sortKey) sortDir = (sortDir === "asc" ? "desc" : "asc")
+                else { sortKey = key; sortDir = (key === "added" ? "desc" : "asc") }
+            }
+            function sortRows(groups, key, dir) {
+                var a = groups.slice()
+                a.sort(function (x, y) {
+                    var xv = key === "name" ? (x.name || "").toLowerCase() : x.added
+                    var yv = key === "name" ? (y.name || "").toLowerCase() : y.added
+                    var c = xv < yv ? -1 : xv > yv ? 1 : 0
+                    if (c === 0) c = (x.added < y.added ? -1 : x.added > y.added ? 1 : 0)
+                    return dir === "asc" ? c : -c
+                })
+                return a
+            }
 
-            property var rows: filterRows(backend.elsGroups, search)
+
+            property var rows: sortRows(filterRows(backend.elsGroups, search), sortKey, sortDir)
 
 
             RowLayout {
@@ -1700,21 +1708,44 @@ ApplicationWindow {
                             spacing: 10
                             Item { Layout.preferredWidth: 14 }   
                             Item { Layout.preferredWidth: 18 }   
-                            Text {
-                                Layout.fillWidth: true
-                                text: root.ui("col_name")
-                                color: th.faint
-                                font.family: th.ui; font.pixelSize: 10; font.weight: Font.DemiBold
-                                font.letterSpacing: 0.7; font.capitalization: Font.AllUppercase
+                            Repeater {
+                                model: [
+                                    { key: "name",  label: root.ui("col_name"),  w: -1 },
+                                    { key: "added", label: root.ui("col_added"), w: 150 }
+                                ]
+                                delegate: Item {
+                                    required property var modelData
+                                    property bool on: elsRoot.sortKey === modelData.key
+                                    Layout.preferredWidth: modelData.w
+                                    Layout.fillWidth: modelData.w < 0
+                                    Layout.fillHeight: true
+                                    RowLayout {
+                                        anchors.left: parent.left
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 6
+                                        Text {
+                                            text: modelData.label
+                                            color: parent.parent.on ? th.text : th.dim
+                                            font.family: th.ui; font.pixelSize: 11; font.weight: Font.DemiBold
+                                        }
+                                        AvIcon {
+                                            visible: !parent.parent.on
+                                            path: ico.updown; size: 13; color: th.faint; opacity: 0.7
+                                        }
+                                        AvIcon {
+                                            visible: parent.parent.on
+                                            path: ico.arrowUp; size: 13; sw: 2; color: th.accent
+                                            rotation: elsRoot.sortDir === "asc" ? 0 : 180
+                                        }
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: elsRoot.setSort(modelData.key)
+                                    }
+                                }
                             }
-                            Text {
-                                Layout.preferredWidth: 150
-                                text: root.ui("col_added")
-                                color: th.faint
-                                font.family: th.ui; font.pixelSize: 10; font.weight: Font.DemiBold
-                                font.letterSpacing: 0.7; font.capitalization: Font.AllUppercase
-                            }
-                            Item { Layout.preferredWidth: 110 }  
+                            Item { Layout.preferredWidth: 110 }
                         }
                     }
 
@@ -1797,7 +1828,7 @@ ApplicationWindow {
                                         Text {
                                             Layout.fillWidth: true
                                             text: groupCol.modelData.added
-                                            color: th.faint
+                                            color: th.dim
                                             font.family: th.mono; font.pixelSize: 10
                                             elide: Text.ElideRight
                                         }
@@ -2913,8 +2944,8 @@ ApplicationWindow {
                                     Text {
                                         visible: !(backend.dropZones.length < 4 && parent.parent.firstFree() !== null)
                                         text: root.ui("zone_grid_full")
-                                        color: th.faint
-                                        font.family: th.ui; font.pixelSize: 11
+                                        color: th.mute
+                                        font.family: th.ui; font.pixelSize: 12
                                         Layout.fillWidth: true
                                         wrapMode: Text.WordWrap
                                     }

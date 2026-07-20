@@ -6,9 +6,6 @@ from i18n import T
 
 
 class ReplaceDecider:
-    # Resolves "file already exists — replace?" prompts during installs. The actual
-    # dialog is the in-app QML overlay: `ask` is Backend._ask, taking a spec dict and
-    # returning the chosen button id. "…to all" answers are remembered for the batch.
 
     def __init__(
         self,

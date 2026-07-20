@@ -1,7 +1,7 @@
-// AddonV — "A2 / Floating Tight" redesign, rebuilt 1:1 from the design handoff.
-// Floating card islands, dark Carbon palette, a single user-selectable accent.
-// All oklch tokens from the spec are converted to sRGB hex (QML can't parse oklch);
-// accent-soft surfaces are produced at runtime via acc(alpha).
+
+
+
+
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
@@ -21,19 +21,19 @@ ApplicationWindow {
     property int currentPage: 0
     readonly property bool maximized: root.visibility === Window.Maximized
 
-    // ---------- fonts (bundled variable fonts, graceful fallback) ----------
+
     FontLoader { id: fGeist;     source: "fonts/Geist.ttf" }
     FontLoader { id: fGeistMono; source: "fonts/GeistMono.ttf" }
     FontLoader { id: fSora;      source: "fonts/Sora.ttf" }
 
-    // ---------- design tokens ----------
+
     QtObject {
         id: th
-        // type
+
         readonly property string ui:   fGeist.status === FontLoader.Ready ? fGeist.name : "Segoe UI"
         readonly property string mono: fGeistMono.status === FontLoader.Ready ? fGeistMono.name : "Cascadia Mono"
         readonly property string disp: fSora.status === FontLoader.Ready ? fSora.name : "Segoe UI"
-        // Carbon palette
+
         readonly property color appBg: "#0b0c0d"
         readonly property color card: "#161719"
         readonly property color cardBorder: "#232527"
@@ -55,10 +55,10 @@ ApplicationWindow {
         readonly property color lineNum: "#3c4049"
         readonly property color knobOff: "#2a2e35"
         readonly property color checkBorder: "#3a3f48"
-        // accent (user-selectable) + derived soft text
+
         readonly property color accent: backend.accent
         readonly property color accentText: Qt.lighter(backend.accent, 1.35)
-        // status dots / texts (oklch → hex)
+
         readonly property color stActiveDot: "#40c787"
         readonly property color stActiveText: "#73dea4"
         readonly property color stDisabledDot: "#5d636c"
@@ -75,7 +75,7 @@ ApplicationWindow {
         readonly property color tagEls: "#28c2be"
         readonly property color tagXml: "#a795ef"
         readonly property color closeHover: "#d73337"
-        // radii — A2 "tight"
+
         readonly property int rLg: 9
         readonly property int rMd: 8
         readonly property int rSm: 7
@@ -84,7 +84,7 @@ ApplicationWindow {
         readonly property int rBox: 8
     }
 
-    // ---------- icon path data: Phosphor (bold), filled paths on viewBox 256 ----------
+
     QtObject {
         id: ico
         readonly property string install: "M228,144v64a12,12,0,0,1-12,12H40a12,12,0,0,1-12-12V144a12,12,0,0,1,24,0v52H204V144a12,12,0,0,1,24,0Zm-108.49,8.49a12,12,0,0,0,17,0l40-40a12,12,0,0,0-17-17L140,115V32a12,12,0,0,0-24,0v83L96.49,95.51a12,12,0,0,0-17,17Z"
@@ -106,7 +106,7 @@ ApplicationWindow {
         readonly property string rename: "M246.15,133.18,146.83,33.86A19.85,19.85,0,0,0,132.69,28H40A12,12,0,0,0,28,40v92.69a19.85,19.85,0,0,0,5.86,14.14l99.32,99.32a20,20,0,0,0,28.28,0l84.69-84.69A20,20,0,0,0,246.15,133.18Zm-98.83,93.17L52,131V52h79l95.32,95.32ZM104,88A16,16,0,1,1,88,72,16,16,0,0,1,104,88Z"
     }
 
-    // ---------- helpers ----------
+
     function acc(a) { return Qt.rgba(th.accent.r, th.accent.g, th.accent.b, a) }
     function rgba(c, a) { return Qt.rgba(c.r, c.g, c.b, a) }
     function ui(key) { return backend.uiRevision, backend.tr(key) }
@@ -130,14 +130,14 @@ ApplicationWindow {
     function glyphChar(st) { return st === "ok" ? "✓" : st === "err" ? "✗" : st === "work" ? "→" : "•" }
     function glyphColor(st) { return st === "ok" ? th.glyphOk : st === "err" ? th.glyphErr : th.glyphRun }
 
-    // =====================================================================
-    //  reusable atoms (inline components)
-    // =====================================================================
 
-    // icon rendered from an SVG path. Default: filled (Phosphor, viewBox 256).
-    // Set filled:false for stroked geometric glyphs (e.g. window controls, box 12).
-    // The Shape is wrapped in an Item so the icon's layout size stays `size`
-    // (Shape recomputes its own implicitWidth from the 256-unit path bounds).
+
+
+
+
+
+
+
     component AvIcon: Item {
         id: ic
         property string path: ""
@@ -165,8 +165,8 @@ ApplicationWindow {
         }
     }
 
-    // dashed rounded-rectangle outline (Canvas) with a settable stroke colour.
-    // Reused by the drop-zone panels, the empty-cell "+" placeholders and the editor.
+
+
     component DashedBox: Canvas {
         id: dbx
         property color stroke: th.dropDash
@@ -193,7 +193,7 @@ ApplicationWindow {
         }
     }
 
-    // status dot with optional soft ring
+
     component StatusDot: Item {
         id: sd
         property string status: "active"
@@ -214,7 +214,7 @@ ApplicationWindow {
         }
     }
 
-    // on/off toggle
+
     component AvToggle: Item {
         id: tg
         property bool on: false
@@ -234,7 +234,7 @@ ApplicationWindow {
         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: tg.toggled() }
     }
 
-    // checkbox
+
     component AvCheck: Item {
         id: ck
         property bool on: false
@@ -256,7 +256,7 @@ ApplicationWindow {
         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: ck.toggled() }
     }
 
-    // status pill
+
     component AvPill: Rectangle {
         id: pl
         property string status: "active"
@@ -275,13 +275,13 @@ ApplicationWindow {
         }
     }
 
-    // pill button (ghost / solid / soft / danger)
+
     component AvButton: Item {
         id: bt
         property string kind: "ghost"
         property string text: ""
         property string iconPath: ""
-        property string size: "md"            // sm | md | lg
+        property string size: "md"            
         signal clicked()
 
         readonly property int h: size === "sm" ? 32 : size === "lg" ? 44 : 38
@@ -302,7 +302,7 @@ ApplicationWindow {
         implicitHeight: h
         implicitWidth: rowc.implicitWidth + padH * 2
         opacity: enabled ? 1 : 0.4
-        // press feedback: every button visibly reacts to a click
+
         scale: ma.pressed ? 0.95 : 1.0
         Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
 
@@ -356,7 +356,7 @@ ApplicationWindow {
         }
     }
 
-    // small uppercase eyebrow section label
+
     component Eyebrow: Text {
         font.family: th.ui
         font.pixelSize: 11
@@ -367,7 +367,7 @@ ApplicationWindow {
         leftPadding: 6
     }
 
-    // page H1 + subtitle
+
     component PageHeader: ColumnLayout {
         property string title: ""
         property string subtitle: ""
@@ -387,9 +387,9 @@ ApplicationWindow {
         }
     }
 
-    // =====================================================================
-    //  window shell
-    // =====================================================================
+
+
+
     Rectangle {
         id: container
         anchors.fill: parent
@@ -402,7 +402,7 @@ ApplicationWindow {
             anchors.fill: parent
             spacing: 0
 
-            // ---------------- titlebar ----------------
+
             Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 46
@@ -434,7 +434,7 @@ ApplicationWindow {
 
                     Item { Layout.fillWidth: true }
 
-                    // safe-installation indicator / toggle (click switches safe ↔ direct)
+
                     Rectangle {
                         id: safeBox
                         Layout.preferredHeight: 28
@@ -465,7 +465,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // window controls
+
                     RowLayout {
                         Layout.leftMargin: 14
                         spacing: 2
@@ -505,7 +505,7 @@ ApplicationWindow {
                 }
             }
 
-            // ---------------- body: floating islands ----------------
+
             RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -515,7 +515,7 @@ ApplicationWindow {
                 Layout.bottomMargin: 14
                 spacing: 14
 
-                // -------- sidebar island --------
+
                 Rectangle {
                     id: sidebar
                     objectName: "sidebar"
@@ -524,8 +524,8 @@ ApplicationWindow {
                     radius: th.rLg
                     color: th.card
                     border.color: th.cardBorder
-                    // effective collapse state: with auto-collapse on, the sidebar is
-                    // collapsed unless hovered; otherwise the manual (persisted) state
+
+
                     readonly property bool collapsed: backend.sidebarAutoCollapse
                                                       ? !sidebarHover.hovered
                                                       : backend.sidebarCollapsed
@@ -535,8 +535,8 @@ ApplicationWindow {
                     }
 
                     ColumnLayout {
-                        // constant margins: rows keep their geometry while the bar
-                        // animates, so the pinned icons never shift
+
+
                         anchors.fill: parent
                         anchors.topMargin: 14
                         anchors.bottomMargin: 14
@@ -544,7 +544,7 @@ ApplicationWindow {
                         anchors.rightMargin: 12
                         spacing: 5
 
-                        // collapse toggle
+
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 34
@@ -564,9 +564,9 @@ ApplicationWindow {
                                 visible: opacity > 0.01
                             }
                             AvIcon {
-                                // anchored to the right edge: moves in lockstep with the
-                                // width animation (an animated x would lag behind the bar).
-                                // Stays visible in auto-collapse mode — just not clickable.
+
+
+
                                 anchors.right: parent.right
                                 anchors.rightMargin: 14
                                 anchors.verticalCenter: parent.verticalCenter
@@ -584,7 +584,7 @@ ApplicationWindow {
                             }
                         }
 
-                        // nav items
+
                         Repeater {
                             model: [
                                 { icon: ico.install,  key: "tab_install" },
@@ -605,8 +605,8 @@ ApplicationWindow {
                                        : navMa.containsMouse ? Qt.lighter(th.card, 1.5) : "transparent"
                                 Behavior on color { ColorAnimation { duration: 130 } }
 
-                                // icon pinned at a fixed spot — identical whether the bar
-                                // is collapsed or expanded; only the label fades in/out
+
+
                                 AvIcon {
                                     id: navIcon
                                     anchors.left: parent.left
@@ -648,7 +648,7 @@ ApplicationWindow {
                     }
                 }
 
-                // -------- content area (transparent; children float) --------
+
                 Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -680,7 +680,7 @@ ApplicationWindow {
             }
         }
 
-        // resize grip
+
         MouseArea {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
@@ -690,9 +690,9 @@ ApplicationWindow {
         }
     }
 
-    // =====================================================================
-    //  1) INSTALL
-    // =====================================================================
+
+
+
     Component {
         id: installPage
         ColumnLayout {
@@ -709,14 +709,14 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 spacing: 16
 
-                // ---- left column (56%) ----
+
                 ColumnLayout {
                     Layout.preferredWidth: 56
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     spacing: 16
 
-                    // ---- configurable drop-zone grid (up to 4 zones on a 2x2 grid) ----
+
                     Item {
                         id: zonesGrid
                         Layout.fillWidth: true
@@ -731,7 +731,7 @@ ApplicationWindow {
                         function spanW(w) { return w * cellW + (w - 1) * gap }
                         function spanH(h) { return h * cellH + (h - 1) * gap }
 
-                        // is grid cell (c,r) covered by an existing zone?
+
                         function cellCovered(c, r) {
                             var z = backend.dropZones
                             for (var i = 0; i < z.length; i++) {
@@ -741,7 +741,7 @@ ApplicationWindow {
                             }
                             return false
                         }
-                        // grid cells not covered by any zone — rendered as "+" placeholders
+
                         function freeCells() {
                             var out = []
                             for (var r = 0; r < 2; r++)
@@ -751,7 +751,7 @@ ApplicationWindow {
                         }
                         property var free: freeCells()
 
-                        // existing zones
+
                         Repeater {
                             model: backend.dropZones
                             delegate: Item {
@@ -774,7 +774,7 @@ ApplicationWindow {
                                     stroke: zoneItem.over ? th.accent : th.dropDash
                                 }
 
-                                // centred content
+
                                 ColumnLayout {
                                     anchors.centerIn: parent
                                     width: parent.width - 32
@@ -831,7 +831,7 @@ ApplicationWindow {
                                     }
                                 }
 
-                                // hover toolbar — edit / open folder / remove
+
                                 RowLayout {
                                     anchors.top: parent.top
                                     anchors.right: parent.right
@@ -887,7 +887,7 @@ ApplicationWindow {
                             }
                         }
 
-                        // empty-cell "add zone" placeholders (replace the hint area)
+
                         Repeater {
                             model: zonesGrid.free
                             delegate: Item {
@@ -936,8 +936,8 @@ ApplicationWindow {
                         }
                     }
 
-                    // metric cards (fixed-height row; fillHeight:false so the drop
-                    // zone above takes the remaining vertical space)
+
+
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: false
@@ -981,14 +981,14 @@ ApplicationWindow {
                     }
                 }
 
-                // ---- right column (44%) ----
+
                 ColumnLayout {
                     Layout.preferredWidth: 44
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     spacing: 16
 
-                    // terminal log island
+
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -1001,7 +1001,7 @@ ApplicationWindow {
                             anchors.fill: parent
                             spacing: 0
 
-                            // header
+
                             Item {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 42
@@ -1034,7 +1034,7 @@ ApplicationWindow {
                                 }
                             }
 
-                            // body
+
                             ListView {
                                 id: logView
                                 Layout.fillWidth: true
@@ -1085,7 +1085,7 @@ ApplicationWindow {
                                 }
                             }
 
-                            // progress bar (during install)
+
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.leftMargin: 16
@@ -1102,7 +1102,7 @@ ApplicationWindow {
                                 }
                             }
 
-                            // footer
+
                             Item {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 38
@@ -1134,7 +1134,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // path card
+
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 80
@@ -1174,7 +1174,7 @@ ApplicationWindow {
                 }
             }
 
-            // ---- log wiring ----
+
             Component.onCompleted: {
                 var h = backend.history
                 for (var i = 0; i < h.length; i++)
@@ -1192,9 +1192,9 @@ ApplicationWindow {
         }
     }
 
-    // =====================================================================
-    //  2) DLC-PACKS
-    // =====================================================================
+
+
+
     Component {
         id: packsPage
         ColumnLayout {
@@ -1202,8 +1202,8 @@ ApplicationWindow {
             objectName: "packsRoot"
             spacing: 16
 
-            // sort + search + selection state. Sorting happens only by clicking the
-            // column headers; "created" was dropped (fall back to "added" if persisted).
+
+
             property string sortKey: backend.packSortKey === "created" ? "added" : backend.packSortKey
             property string sortDir: backend.packSortDir
             property string search: ""
@@ -1216,22 +1216,22 @@ ApplicationWindow {
                 { key: "status", label: root.ui("col_status") }
             ]
 
-            // The table is backed by a ListModel (not a JS array) so a single-row
-            // change (toggle) can be applied in place without resetting the ListView's
-            // scroll position. A full rebuild only happens on sort/search/structural change.
+
+
+
             ListModel { id: packsModel }
 
-            // active first, then disabled, then the diagnostic states
+
             function statusRank(s) {
                 return s === "active" ? 0 : s === "disabled" ? 1 : s === "notinlist" ? 2 : 3
             }
-            // prefix match (starts-with), case-insensitive — not substring
+
             function matchesSearch(name) {
                 var q = search.toLowerCase()
                 return q.length === 0 || name.toLowerCase().indexOf(q) === 0
             }
             function buildArray() {
-                var src = backend.packs   // marshal the list once, not per-iteration (O(n) not O(n^2))
+                var src = backend.packs   
                 var key = sortKey, dir = sortDir
                 var a = []
                 for (var i = 0; i < src.length; i++)
@@ -1240,7 +1240,7 @@ ApplicationWindow {
                     var xv = key === "status" ? packsRoot.statusRank(x.status) : x[key]
                     var yv = key === "status" ? packsRoot.statusRank(y.status) : y[key]
                     var c = xv < yv ? -1 : xv > yv ? 1 : 0
-                    if (c === 0) c = x.name < y.name ? -1 : x.name > y.name ? 1 : 0  // stable tiebreak
+                    if (c === 0) c = x.name < y.name ? -1 : x.name > y.name ? 1 : 0  
                     return dir === "asc" ? c : -c
                 })
                 return a
@@ -1251,11 +1251,11 @@ ApplicationWindow {
                 for (var i = 0; i < a.length; i++)
                     packsModel.append({ name: a[i].name, status: a[i].status, added: a[i].added })
             }
-            // reconcile model with backend.packs after a backend change. If the visible
-            // set is unchanged (a toggle), only update fields in place → no scroll. If
-            // packs were added/removed/filtered out, fall back to a full rebuild.
+
+
+
             function reconcile() {
-                var src = backend.packs   // marshal once
+                var src = backend.packs   
                 var byName = {}, wantNames = {}, wantCount = 0
                 for (var i = 0; i < src.length; i++) {
                     var p = src[i]
@@ -1279,7 +1279,7 @@ ApplicationWindow {
                 else { sortKey = key; sortDir = (key === "added" ? "desc" : "asc") }
                 backend.setPackSort(sortKey, sortDir)
                 rebuildModel()
-                packsList.positionViewAtBeginning()   // sort change → jump back to the top
+                packsList.positionViewAtBeginning()   
             }
             onSearchChanged: rebuildModel()
             function isSel(n) { selVer; return selMap[n] === true }
@@ -1301,7 +1301,7 @@ ApplicationWindow {
             Connections {
                 target: backend
                 function onModsListChanged() {
-                    // drop selections for packs that no longer exist
+
                     var src = backend.packs
                     var present = {}
                     for (var i = 0; i < src.length; i++) present[src[i].name] = true
@@ -1312,7 +1312,7 @@ ApplicationWindow {
             }
             Component.onCompleted: { backend.reloadMods(); rebuildModel() }
 
-            // ---- header row ----
+
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
@@ -1326,7 +1326,7 @@ ApplicationWindow {
 
                 Item { Layout.fillWidth: true }
 
-                // search bar (filters by pack name)
+
                 Rectangle {
                     Layout.preferredHeight: 38
                     Layout.preferredWidth: 260
@@ -1352,8 +1352,8 @@ ApplicationWindow {
                             background: Item {}
                             selectByMouse: true
                             selectionColor: root.acc(0.35)
-                            // debounce: rebuild the list shortly after typing stops, so each
-                            // keystroke stays instant even while typing fast
+
+
                             onTextChanged: searchDebounce.restart()
                             Timer {
                                 id: searchDebounce
@@ -1385,7 +1385,7 @@ ApplicationWindow {
                 }
             }
 
-            // ---- table island ----
+
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -1394,14 +1394,14 @@ ApplicationWindow {
                 border.color: th.cardBorder
                 clip: true
 
-                // grid template: 38 30 1fr 150 132 56  (gap 10, padding 18)
+
                 readonly property var cols: [38, 30, -1, 150, 132, 56]
 
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: 0
 
-                    // header
+
                     Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 44
@@ -1413,7 +1413,7 @@ ApplicationWindow {
                             spacing: 10
                             Item { Layout.preferredWidth: 38 }
                             Item { Layout.preferredWidth: 30 }
-                            // sortable header cells (Name, Added, Status)
+
                             Repeater {
                                 model: [
                                     { key: "name",   label: root.ui("col_name"),   w: -1 },
@@ -1463,7 +1463,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // rows
+
                     ListView {
                         id: packsList
                         objectName: "packsList"
@@ -1491,7 +1491,7 @@ ApplicationWindow {
                                 anchors.leftMargin: 18
                                 anchors.rightMargin: 18
                                 spacing: 10
-                                // checkbox
+
                                 Item {
                                     Layout.preferredWidth: 38
                                     Layout.fillHeight: true
@@ -1501,14 +1501,14 @@ ApplicationWindow {
                                         onToggled: packsRoot.toggleSel(name)
                                     }
                                 }
-                                // index
+
                                 Text {
                                     Layout.preferredWidth: 30
                                     text: (index + 1 < 10 ? "0" : "") + (index + 1)
                                     color: th.faint
                                     font.family: th.mono; font.pixelSize: 11
                                 }
-                                // name
+
                                 Text {
                                     Layout.fillWidth: true
                                     text: name
@@ -1516,7 +1516,7 @@ ApplicationWindow {
                                     font.family: th.mono; font.pixelSize: 13
                                     elide: Text.ElideRight
                                 }
-                                // added
+
                                 ColumnLayout {
                                     Layout.preferredWidth: 150
                                     spacing: 0
@@ -1531,7 +1531,7 @@ ApplicationWindow {
                                         font.family: th.mono; font.pixelSize: 10
                                     }
                                 }
-                                // status pill
+
                                 Item {
                                     Layout.preferredWidth: 132
                                     Layout.fillHeight: true
@@ -1540,7 +1540,7 @@ ApplicationWindow {
                                         status: packRow.status
                                     }
                                 }
-                                // toggle
+
                                 Item {
                                     Layout.preferredWidth: 56
                                     Layout.fillHeight: true
@@ -1555,7 +1555,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // footer
+
                     Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 42
@@ -1594,9 +1594,9 @@ ApplicationWindow {
         }
     }
 
-    // =====================================================================
-    //  3) ELS  (install-time groups, expandable)
-    // =====================================================================
+
+
+
     Component {
         id: elsPage
         ColumnLayout {
@@ -1605,8 +1605,8 @@ ApplicationWindow {
             spacing: 16
 
             property string search: ""
-            // expanded-group state, keyed by stable group id (survives reconcile);
-            // expandVer bumps to re-read the JS map in bindings (mirrors selMap/selVer)
+
+
             property var expandMap: ({})
             property int expandVer: 0
 
@@ -1620,7 +1620,7 @@ ApplicationWindow {
                 for (var i = 0; i < g.files.length; i++) r.push(g.files[i].path)
                 return r
             }
-            // prefix match (starts-with) on any file name in the group
+
             function filterRows(groups, q) {
                 if (!q) return groups
                 q = q.toLowerCase()
@@ -1639,10 +1639,10 @@ ApplicationWindow {
                 return n
             }
 
-            // re-evaluates on modsListChanged (reads backend.elsGroups) and on search
+
             property var rows: filterRows(backend.elsGroups, search)
 
-            // ---- header row ----
+
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
@@ -1656,7 +1656,7 @@ ApplicationWindow {
 
                 Item { Layout.fillWidth: true }
 
-                // search bar (filters groups by contained file name)
+
                 Rectangle {
                     Layout.preferredHeight: 38
                     Layout.preferredWidth: 260
@@ -1713,7 +1713,7 @@ ApplicationWindow {
                 }
             }
 
-            // ---- table island ----
+
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -1726,7 +1726,7 @@ ApplicationWindow {
                     anchors.fill: parent
                     spacing: 0
 
-                    // header
+
                     Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 44
@@ -1736,8 +1736,8 @@ ApplicationWindow {
                             anchors.leftMargin: 18
                             anchors.rightMargin: 18
                             spacing: 10
-                            Item { Layout.preferredWidth: 14 }   // chevron column
-                            Item { Layout.preferredWidth: 18 }   // folder icon column
+                            Item { Layout.preferredWidth: 14 }   
+                            Item { Layout.preferredWidth: 18 }   
                             Text {
                                 Layout.fillWidth: true
                                 text: root.ui("col_name")
@@ -1752,11 +1752,11 @@ ApplicationWindow {
                                 font.family: th.ui; font.pixelSize: 10; font.weight: Font.DemiBold
                                 font.letterSpacing: 0.7; font.capitalization: Font.AllUppercase
                             }
-                            Item { Layout.preferredWidth: 110 }  // action column
+                            Item { Layout.preferredWidth: 110 }  
                         }
                     }
 
-                    // empty state
+
                     Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -1777,7 +1777,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // rows: each group is a header + (when expanded) its file rows
+
                     ListView {
                         id: elsList
                         objectName: "elsList"
@@ -1794,7 +1794,7 @@ ApplicationWindow {
                             width: elsList.width
                             property bool expanded: elsRoot.isExpanded(modelData.id)
 
-                            // ---- group (folder) header ----
+
                             Rectangle {
                                 width: parent.width
                                 height: 48
@@ -1850,7 +1850,7 @@ ApplicationWindow {
                                 }
                             }
 
-                            // ---- child file rows (built only while expanded) ----
+
                             Repeater {
                                 model: groupCol.expanded ? groupCol.modelData.files : []
                                 delegate: Rectangle {
@@ -1861,7 +1861,7 @@ ApplicationWindow {
                                     color: fileMa.containsMouse ? root.rgba(Qt.rgba(1,1,1,1), 0.03)
                                                                 : root.rgba(Qt.rgba(0,0,0,1), 0.18)
                                     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: th.rowBorder }
-                                    // accent rail marking nested rows
+
                                     Rectangle { width: 2; height: parent.height; color: root.acc(0.5); x: 26 }
                                     MouseArea { id: fileMa; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
                                     RowLayout {
@@ -1892,7 +1892,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // footer
+
                     Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 42
@@ -1917,9 +1917,9 @@ ApplicationWindow {
         }
     }
 
-    // =====================================================================
-    //  4) PROFILES  (saved mod loadouts — switch DLC + ELS in one click)
-    // =====================================================================
+
+
+
     Component {
         id: profilesPage
         ColumnLayout {
@@ -1927,7 +1927,7 @@ ApplicationWindow {
             objectName: "profRoot"
             spacing: 16
 
-            // ---- header row ----
+
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
@@ -1940,7 +1940,7 @@ ApplicationWindow {
                 Item { Layout.fillWidth: true }
             }
 
-            // ---- tile grid: a "+" tile first, then one tile per profile ----
+
             GridView {
                 id: profGrid
                 objectName: "profGrid"
@@ -1959,13 +1959,13 @@ ApplicationWindow {
                     required property int index
                     width: profGrid.cellWidth
                     height: profGrid.cellHeight
-                    // cached once per delegate evaluation; re-evaluates on profilesChanged
+
                     readonly property var prof: index > 0 ? backend.profiles[index - 1] : null
                     readonly property color pc: (prof && prof.color && prof.color.length > 0)
                                                 ? prof.color : th.accent
                     readonly property bool isActive: prof !== null && prof.active === true
 
-                    // ---- "+" add tile (always the first cell) ----
+
                     Item {
                         id: addTile
                         anchors.fill: parent
@@ -2010,7 +2010,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // ---- profile tile ----
+
                     Rectangle {
                         anchors.fill: parent
                         anchors.rightMargin: profGrid.gap
@@ -2023,8 +2023,8 @@ ApplicationWindow {
                         border.width: profCell.isActive ? 1.5 : 1
                         border.color: profCell.isActive ? root.rgba(profCell.pc, 0.55) : th.cardBorder
                         Behavior on color { ColorAnimation { duration: 120 } }
-                        // clicking a tile selects its profile (radio behaviour: the
-                        // previously active one is switched off by the backend)
+
+
                         MouseArea {
                             id: tileMa
                             anchors.fill: parent
@@ -2051,8 +2051,8 @@ ApplicationWindow {
                                     }
                                 }
                                 Item { Layout.fillWidth: true }
-                                // radio dot — filled while this profile is active;
-                                // clicking the dot itself can also switch it off
+
+
                                 Rectangle {
                                     width: 18; height: 18; radius: 9
                                     color: "transparent"
@@ -2113,9 +2113,9 @@ ApplicationWindow {
         }
     }
 
-    // =====================================================================
-    //  5) FILE RENAMER  (rename a replace vehicle's file set to another model)
-    // =====================================================================
+
+
+
     Component {
         id: renamePage
         ColumnLayout {
@@ -2123,7 +2123,7 @@ ApplicationWindow {
             objectName: "renameRoot"
             spacing: 16
 
-            // target preset selection lives in QML; the backend holds files + base
+
             property string presetId: ""
             function selectedModel() {
                 var id = renameRoot.presetId
@@ -2148,14 +2148,14 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 spacing: 16
 
-                // ---- left column (56%): drop → detected vehicle → preview ----
+
                 ColumnLayout {
                     Layout.preferredWidth: 56
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     spacing: 16
 
-                    // drop zone (same look as the install-page zones)
+
                     Item {
                         id: renameDrop
                         Layout.fillWidth: true
@@ -2232,7 +2232,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // detected vehicle card (base name, set chips when ambiguous)
+
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: false
@@ -2322,7 +2322,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // preview island: old name → new name per file
+
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -2415,14 +2415,14 @@ ApplicationWindow {
                     }
                 }
 
-                // ---- right column (44%): target preset → destination → action ----
+
                 ColumnLayout {
                     Layout.preferredWidth: 44
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     spacing: 16
 
-                    // target vehicle presets island
+
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -2515,10 +2515,10 @@ ApplicationWindow {
                         }
                     }
 
-                    // destination folder card — no default folder: a missing choice is
-                    // flagged loudly (red border + tint) until the user picks one. Not
-                    // flagged when every selected file routes to the ELS folder anyway
-                    // (XML-only set with the ELS setting on → destination not needed).
+
+
+
+
                     Rectangle {
                         id: destCard
                         readonly property bool destMissing: backend.renameDest.length === 0
@@ -2571,8 +2571,8 @@ ApplicationWindow {
                         }
                     }
 
-                    // transient progress / success feedback — collapses away when idle,
-                    // so there is never a permanently empty bar sitting in the layout
+
+
                     Rectangle {
                         id: renToast
                         property real frac: -1
@@ -2617,7 +2617,7 @@ ApplicationWindow {
                             }
                         }
 
-                        // running: label + progress bar
+
                         ColumnLayout {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
@@ -2642,7 +2642,7 @@ ApplicationWindow {
                                 }
                             }
                         }
-                        // done: check + summary (auto-hides via renDoneTimer)
+
                         RowLayout {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
@@ -2662,7 +2662,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // primary action
+
                     AvButton {
                         Layout.fillWidth: true
                         kind: "solid"; size: "lg"
@@ -2678,9 +2678,9 @@ ApplicationWindow {
         }
     }
 
-    // =====================================================================
-    //  6) SETTINGS
-    // =====================================================================
+
+
+
     Component {
         id: settingsPage
         Flickable {
@@ -2702,7 +2702,7 @@ ApplicationWindow {
                     subtitle: root.ui("subtitle_placeholder")
                 }
 
-                // ---- Pfade ----
+
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 10
@@ -2744,7 +2744,7 @@ ApplicationWindow {
                     }
                 }
 
-                // ---- Verhalten ----
+
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 10
@@ -2814,7 +2814,7 @@ ApplicationWindow {
                     }
                 }
 
-                // ---- Drop-Zonen ----
+
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 10
@@ -2830,7 +2830,7 @@ ApplicationWindow {
                             width: parent.width
                             spacing: 0
 
-                            // description
+
                             Item {
                                 Layout.fillWidth: true
                                 implicitHeight: zonesDescTxt.implicitHeight + 28
@@ -2848,7 +2848,7 @@ ApplicationWindow {
                                 }
                             }
 
-                            // one row per zone
+
                             Repeater {
                                 model: backend.dropZones
                                 delegate: Item {
@@ -2901,7 +2901,7 @@ ApplicationWindow {
                                 }
                             }
 
-                            // footer — add zone (when a cell is free) + reset
+
                             Item {
                                 Layout.fillWidth: true
                                 implicitHeight: 62
@@ -2949,12 +2949,12 @@ ApplicationWindow {
                     }
                 }
 
-                // ---- Sprache + Design ----
+
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 16
 
-                    // language
+
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignTop
@@ -3010,7 +3010,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // design / accent
+
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignTop
@@ -3051,7 +3051,7 @@ ApplicationWindow {
                                     }
                                     Item { Layout.fillWidth: true }
                                 }
-                                // accent swatches
+
                                 Flow {
                                     Layout.fillWidth: true
                                     spacing: 8
@@ -3082,7 +3082,7 @@ ApplicationWindow {
                     }
                 }
 
-                // ---- System (history, updates, version) ----
+
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 10
@@ -3135,9 +3135,9 @@ ApplicationWindow {
         }
     }
 
-    // a single settings row: title + optional desc on the left, control on the right.
-    // the control is supplied as a Component (lazily loaded) so the row's own
-    // structural children aren't captured by a default-property override.
+
+
+
     component SettingRow: Item {
         id: srow
         property string title: ""
@@ -3187,10 +3187,10 @@ ApplicationWindow {
         }
     }
 
-    // =====================================================================
-    //  profile editor overlay — name + two checklists (DLC packs / ELS files).
-    //  Pure QML state (selection maps); saves via backend.saveProfile(...).
-    // =====================================================================
+
+
+
+
     Item {
         id: profileEditor
         objectName: "profileEditor"
@@ -3198,13 +3198,13 @@ ApplicationWindow {
         z: 1001
         property bool active: false
         property string editId: ""
-        property string pcolor: ""               // "" = use the UI accent
+        property string pcolor: ""               
         property var dlcSel: ({})
         property var elsSel: ({})
         property int selVer: 0
         visible: active
 
-        // flat list of every installed ELS file (groups → files); re-evaluates with backend
+
         function flatEls() {
             var g = backend.elsGroups, r = []
             for (var i = 0; i < g.length; i++)
@@ -3245,7 +3245,7 @@ ApplicationWindow {
             editId = ""
             nameField.text = ""
             pcolor = ""
-            // start blank — the user picks every DLC pack / ELS file themselves
+
             dlcSel = ({}); elsSel = ({}); selVer++
             active = true
             nameField.forceActiveFocus()
@@ -3272,14 +3272,14 @@ ApplicationWindow {
             active = false
         }
 
-        // scrim — click outside cancels
+
         Rectangle {
             anchors.fill: parent
             color: root.rgba(Qt.rgba(0, 0, 0, 1), 0.55)
             MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: profileEditor.close() }
         }
 
-        // card
+
         Rectangle {
             anchors.centerIn: parent
             width: Math.min(580, profileEditor.width - 80)
@@ -3287,7 +3287,7 @@ ApplicationWindow {
             radius: th.rLg
             color: th.card
             border.color: th.cardBorder
-            MouseArea { anchors.fill: parent }   // swallow clicks so they don't hit the scrim
+            MouseArea { anchors.fill: parent }   
 
             ColumnLayout {
                 anchors.fill: parent
@@ -3302,7 +3302,7 @@ ApplicationWindow {
                     font.family: th.disp; font.pixelSize: 18; font.weight: Font.DemiBold
                 }
 
-                // name field
+
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 42
@@ -3327,7 +3327,7 @@ ApplicationWindow {
                     }
                 }
 
-                // accent colour — used as the tile accent on the profiles grid
+
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 12
@@ -3339,7 +3339,7 @@ ApplicationWindow {
                     Flow {
                         Layout.fillWidth: true
                         spacing: 7
-                        // "default" = use the UI accent (color "")
+
                         Rectangle {
                             width: 24; height: 24; radius: th.rSm
                             color: th.accent
@@ -3368,13 +3368,13 @@ ApplicationWindow {
                     }
                 }
 
-                // two checklists side by side
+
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     spacing: 12
 
-                    // ---- DLC packs ----
+
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -3451,7 +3451,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // ---- ELS files ----
+
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -3529,7 +3529,7 @@ ApplicationWindow {
                     }
                 }
 
-                // buttons
+
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.topMargin: 2
@@ -3548,11 +3548,11 @@ ApplicationWindow {
         }
     }
 
-    // =====================================================================
-    //  drop-zone editor overlay — name, type (auto / custom folder), target
-    //  folder (inside the GTA dir) and a 2x2 position/size picker. Saves via
-    //  backend.saveZone(spec). Pure QML state, mirrors the profile editor.
-    // =====================================================================
+
+
+
+
+
     Item {
         id: zoneEditor
         objectName: "zoneEditor"
@@ -3564,9 +3564,9 @@ ApplicationWindow {
         property int layoutIdx: 0
         visible: active
 
-        // every possible zone footprint on the 2x2 grid — picking from this list
-        // is always a valid rectangle, so saving can never be "forbidden". Layouts
-        // overlapping another zone are greyed out instead.
+
+
+
         readonly property var layouts: [
             { col: 0, row: 0, w: 2, h: 2, key: "zone_layout_full" },
             { col: 0, row: 0, w: 2, h: 1, key: "zone_layout_top" },
@@ -3579,7 +3579,7 @@ ApplicationWindow {
             { col: 1, row: 1, w: 1, h: 1, key: "zone_layout_br" }
         ]
 
-        // is cell (c,r) occupied by a *different* zone? (the edited zone's own cells are free)
+
         function cellBusy(c, r) {
             var z = backend.dropZones
             for (var i = 0; i < z.length; i++) {
@@ -3602,7 +3602,7 @@ ApplicationWindow {
             znNameField.text = ""
             znRelField.text = ""
             auto = false
-            layoutIdx = 5 + r * 2 + c          // the quarter at the clicked free cell
+            layoutIdx = 5 + r * 2 + c          
             active = true
             znNameField.forceActiveFocus()
         }
@@ -3638,14 +3638,14 @@ ApplicationWindow {
             active = false
         }
 
-        // scrim
+
         Rectangle {
             anchors.fill: parent
             color: root.rgba(Qt.rgba(0, 0, 0, 1), 0.55)
             MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: zoneEditor.close() }
         }
 
-        // card
+
         Rectangle {
             anchors.centerIn: parent
             width: Math.min(560, zoneEditor.width - 80)
@@ -3653,7 +3653,7 @@ ApplicationWindow {
             radius: th.rLg
             color: th.card
             border.color: th.cardBorder
-            MouseArea { anchors.fill: parent }   // swallow clicks
+            MouseArea { anchors.fill: parent }   
 
             Flickable {
                 anchors.fill: parent
@@ -3676,7 +3676,7 @@ ApplicationWindow {
                         font.family: th.disp; font.pixelSize: 18; font.weight: Font.DemiBold
                     }
 
-                    // name
+
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 42
@@ -3701,7 +3701,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // type (auto vs custom folder)
+
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 8
@@ -3759,7 +3759,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // target folder (custom only)
+
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 8
@@ -3802,7 +3802,7 @@ ApplicationWindow {
                                 }
                             }
                         }
-                        // quick-pick presets
+
                         Flow {
                             Layout.fillWidth: true
                             spacing: 7
@@ -3834,9 +3834,9 @@ ApplicationWindow {
                         }
                     }
 
-                    // layout (position & size): pick one of the 9 possible arrangements.
-                    // Arrangements that overlap another zone are greyed out — so any
-                    // selectable option is valid and saving always works.
+
+
+
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 8
@@ -3909,7 +3909,7 @@ ApplicationWindow {
                         }
                     }
 
-                    // buttons
+
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.topMargin: 2
@@ -3935,10 +3935,10 @@ ApplicationWindow {
         }
     }
 
-    // =====================================================================
-    //  rename-preset editor overlay — display name + GTA model name. Saves via
-    //  backend.saveRenamePreset(spec); mirrors the profile/zone editors.
-    // =====================================================================
+
+
+
+
     Item {
         id: renamePresetEditor
         objectName: "renamePresetEditor"
@@ -3972,14 +3972,14 @@ ApplicationWindow {
             active = false
         }
 
-        // scrim — click outside cancels
+
         Rectangle {
             anchors.fill: parent
             color: root.rgba(Qt.rgba(0, 0, 0, 1), 0.55)
             MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: renamePresetEditor.close() }
         }
 
-        // card
+
         Rectangle {
             anchors.centerIn: parent
             width: Math.min(440, renamePresetEditor.width - 80)
@@ -3987,7 +3987,7 @@ ApplicationWindow {
             radius: th.rLg
             color: th.card
             border.color: th.cardBorder
-            MouseArea { anchors.fill: parent }   // swallow clicks so they don't hit the scrim
+            MouseArea { anchors.fill: parent }   
 
             ColumnLayout {
                 id: rpCol
@@ -4003,7 +4003,7 @@ ApplicationWindow {
                     font.family: th.disp; font.pixelSize: 18; font.weight: Font.DemiBold
                 }
 
-                // display name
+
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 8
@@ -4036,7 +4036,7 @@ ApplicationWindow {
                     }
                 }
 
-                // game model name
+
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 8
@@ -4069,7 +4069,7 @@ ApplicationWindow {
                     }
                 }
 
-                // buttons
+
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.topMargin: 2
@@ -4096,11 +4096,11 @@ ApplicationWindow {
         }
     }
 
-    // =====================================================================
-    //  in-app modal overlay — replaces native QMessageBox / QDialog.
-    //  Driven by backend.dialogRequested(spec); answered via backend.resolveDialog(id),
-    //  which quits the backend's nested event loop (same blocking semantics as .exec()).
-    // =====================================================================
+
+
+
+
+
     Item {
         id: dlg
         objectName: "dlg"
@@ -4122,7 +4122,7 @@ ApplicationWindow {
             if (!spec) return
             if (spec.template === "picker") { resolve(selValue); return }
             var b = spec.buttons
-            if (b && b.length) resolve(b[b.length - 1].id)   // primary = last button
+            if (b && b.length) resolve(b[b.length - 1].id)   
         }
 
         Connections {
@@ -4130,14 +4130,14 @@ ApplicationWindow {
             function onDialogRequested(s) { dlg.open(s) }
         }
 
-        // scrim — blocks the UI underneath; click outside cancels
+
         Rectangle {
             anchors.fill: parent
             color: root.rgba(Qt.rgba(0, 0, 0, 1), 0.55)
             MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: dlg.dismiss() }
         }
 
-        // keyboard: Esc cancels, Enter triggers the primary action
+
         FocusScope {
             id: dlgFocus
             anchors.fill: parent
@@ -4146,7 +4146,7 @@ ApplicationWindow {
             Keys.onEnterPressed: dlg.accept()
         }
 
-        // card
+
         Rectangle {
             anchors.centerIn: parent
             width: Math.min(460, dlg.width - 80)
@@ -4154,7 +4154,7 @@ ApplicationWindow {
             radius: th.rLg
             color: th.card
             border.color: th.cardBorder
-            MouseArea { anchors.fill: parent }   // swallow clicks so they don't hit the scrim
+            MouseArea { anchors.fill: parent }   
 
             ColumnLayout {
                 id: cardCol
@@ -4181,7 +4181,7 @@ ApplicationWindow {
                     textFormat: Text.StyledText
                 }
 
-                // picker list (language / ELS variant)
+
                 Rectangle {
                     visible: dlg.spec && dlg.spec.template === "picker"
                     Layout.fillWidth: true
@@ -4246,7 +4246,7 @@ ApplicationWindow {
                     }
                 }
 
-                // button row
+
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.topMargin: 2
@@ -4277,6 +4277,6 @@ ApplicationWindow {
     }
 
     onClosing: backend.saveOnClose()
-    // prompt for language first-run (in-app, after the overlay exists), then check updates
+
     Component.onCompleted: { backend.promptInitialLanguage(); backend.maybeCheckOnStart() }
 }

@@ -58,7 +58,7 @@ class Backend(QObject):
     zonesChanged = Signal()
     renameChanged = Signal()
     renamePresetsChanged = Signal()
-    dialogRequested = Signal("QVariant")   # spec dict -> in-app modal overlay in QML
+    dialogRequested = Signal("QVariant")
 
     def __init__(self) -> None:
         super().__init__()
@@ -67,26 +67,18 @@ class Backend(QObject):
         self._ui_revision = 0
         self._history: list[tuple[str, str, str]] = []
         self._packs: list = []
-        self._installed = None            # cached pack-folder scan (None = not scanned yet)
+        self._installed = None
         self._els_sets = 0
-        self._els_view: list = []         # els install-time groups, marshalled for QML
+        self._els_view: list = []
         self._install_state = "ready"
         self._last_summary = ""
         self._warned_dupes: set[str] = set()
         self._update_thread = None
-        # file-renamer tab state: dropped files + the selected base (source model) name.
-        # state/summary are separate from the install tab's so the rename page only
-        # ever reflects REN operations (ready | running | done).
         self._rename_files: list[Path] = []
         self._rename_base = ""
         self._rename_state = "ready"
         self._rename_summary = ""
-        # per-drop cache: does this XML's content look like an ELS-VCF? (keyed by
-        # str(path); computed once on drop so property getters don't re-read files)
         self._rename_els_like: dict[str, bool] = {}
-        # in-app modal state: a stack of nested QEventLoops (one per open dialog) so a
-        # dialog opened from inside another (e.g. replace prompt during install) nests
-        # cleanly, exactly like nested QMessageBox.exec() used to.
         self._dialog_loops: list[QEventLoop] = []
         self._dialog_result = ""
         self._needs_language = False
@@ -94,9 +86,6 @@ class Backend(QObject):
         self._restore_history()
 
     def _init_language(self) -> None:
-        # runs in __init__ before QML exists, so we can't show the in-app picker here.
-        # just pick a tentative language; if none was saved, flag a first-run prompt that
-        # promptInitialLanguage() shows once the overlay is up (see QML Component.onCompleted).
         saved = self.config.language
         if saved and saved in LANGUAGES:
             i18n.set_language(saved)
@@ -149,7 +138,6 @@ class Backend(QObject):
             self.config.terminal_history = []
         self.config.save()
 
-    # ----- logging -----
     def _log(self, group: str, status: str, text: str) -> None:
         self._history.append((group, status, text))
         self.logAppended.emit(group, status, text)
@@ -162,10 +150,6 @@ class Backend(QObject):
         self.progress.emit(frac, label or "")
         QCoreApplication.processEvents()
 
-    # ----- in-app modal dialogs (replace native QMessageBox / QDialog) -----
-    # _ask emits a spec to the QML overlay and spins a nested event loop until QML
-    # calls resolveDialog(choice) — same blocking semantics as the old .exec(), so all
-    # the synchronous call sites (incl. the install loop) keep working unchanged.
     def _ask(self, spec: dict) -> str:
         loop = QEventLoop()
         self._dialog_loops.append(loop)
@@ -206,18 +190,15 @@ class Backend(QObject):
         })
 
     def _pick(self, title: str, body: str, options: list, selected: str = "") -> str:
-        # options: [{"value", "label", "note"}]; returns the chosen value or "" (cancel)
         return self._ask({
             "template": "picker", "title": title, "body": body,
             "options": options, "selected": selected, "cancelId": "",
         })
 
-    # ----- simple translation passthrough for QML -----
     @Slot(str, result=str)
     def tr(self, key: str) -> str:
         return T(key)
 
-    # ----- properties -----
     def _get_history(self):
         return [{"group": g, "status": s, "text": t} for g, s, t in self._history]
     history = Property("QVariantList", _get_history, constant=True)
@@ -286,7 +267,6 @@ class Backend(QObject):
         return bool(self.config.dlclist_xml_path) and Path(self.config.dlclist_xml_path).is_file()
     dlclistSet = Property(bool, _get_dlclist_set, notify=textsChanged)
 
-    # ----- DLC-Packs model + metrics -----
     def _get_packs(self):
         return self._packs
     packs = Property("QVariantList", _get_packs, notify=modsListChanged)
@@ -311,7 +291,6 @@ class Backend(QObject):
         return sum(1 for p in self._packs if p["status"] in ("notinlist", "duplicate"))
     hintsCount = Property(int, _get_hints, notify=modsListChanged)
 
-    # ----- profiles (saved mod loadouts) -----
     def _get_profiles(self):
         active = self.config.active_profile
         out = []
@@ -335,7 +314,6 @@ class Backend(QObject):
         return self.config.active_profile
     activeProfile = Property(str, _get_active_profile, notify=profilesChanged)
 
-    # ----- install footer summary -----
     def _get_install_state(self):
         return self._install_state
     installState = Property(str, _get_install_state, notify=summaryChanged)
@@ -344,7 +322,6 @@ class Backend(QObject):
         return self._last_summary
     lastSummary = Property(str, _get_last_summary, notify=summaryChanged)
 
-    # ----- behaviour toggles (settings → Verhalten) -----
     def _get_auto_maintain(self):
         return self.config.auto_maintain_dlclist
     autoMaintainDlclist = Property(bool, _get_auto_maintain, notify=settingsChanged)
@@ -357,7 +334,6 @@ class Backend(QObject):
         return self.config.rename_xml_to_els
     renameXmlToEls = Property(bool, _get_rename_xml_to_els, notify=settingsChanged)
 
-    # ----- pack sort persistence (sortKey/sortDir live in QML, stored here) -----
     def _get_pack_sort_key(self):
         return self.config.pack_sort_key
     packSortKey = Property(str, _get_pack_sort_key, notify=settingsChanged)
@@ -370,14 +346,13 @@ class Backend(QObject):
         return list(theme.ACCENT_PRESETS)
     accentPresets = Property("QVariantList", _get_accent_presets, constant=True)
 
-    # ----- window / theme / language -----
     @Slot(str)
     def setAccent(self, color: str) -> None:
         if not color:
             return
         self.config.accent = color
         self.config.save()
-        QCoreApplication.instance().setStyleSheet("")  # widgets dialogs use palette
+        QCoreApplication.instance().setStyleSheet("")
         self.accentChanged.emit()
 
     @Slot()
@@ -442,7 +417,7 @@ class Backend(QObject):
         self.config.rename_xml_to_els = on
         self.config.save()
         self.settingsChanged.emit()
-        self.renameChanged.emit()   # XML routing changed → renameNeedsDest re-evaluates
+        self.renameChanged.emit()
 
     @Slot(str, str)
     def setPackSort(self, key: str, direction: str) -> None:
@@ -457,7 +432,7 @@ class Backend(QObject):
         if not on:
             if not self._confirm(T("direct_warning_title"), T("direct_warning_body"),
                                   confirm_label=T("yes"), danger=True):
-                self.textsChanged.emit()  # let the toggle snap back in QML
+                self.textsChanged.emit()
                 return False
             self._log("INFO", "info", T("direct_enabled"))
         else:
@@ -467,7 +442,6 @@ class Backend(QObject):
         self.textsChanged.emit()
         return True
 
-    # ----- path pickers -----
     @Slot()
     def chooseGtaPath(self) -> None:
         chosen = QFileDialog.getExistingDirectory(None, T("choose_gta_dialog"))
@@ -480,7 +454,7 @@ class Backend(QObject):
         self.config.gta_path = str(path)
         self.config.save()
         self.textsChanged.emit()
-        self.renameChanged.emit()   # ELS availability changed → XML routing/needsDest
+        self.renameChanged.emit()
         self._log("INFO", "ok", T("gta_path_set", path=str(path)))
         self.reloadMods()
 
@@ -502,14 +476,12 @@ class Backend(QObject):
         self.textsChanged.emit()
         self.reloadMods()
 
-    # ----- paths helper -----
     def _paths(self):
         gta = self.config.gta_path
         if not gta or not is_gta_root(Path(gta)):
             return None
         return derive_paths(Path(gta), use_mods=self.config.use_mods_folder)
 
-    # ----- DLC-Packs model -----
     @staticmethod
     def _fmt_ts(ts: float) -> str:
         try:
@@ -519,15 +491,10 @@ class Backend(QObject):
 
     @Slot()
     def reloadMods(self) -> None:
-        # full refresh: rescan the (expensive) pack folders, then recompute statuses.
-        # use this after installs/removals/path changes. A plain dlclist toggle should
-        # call _recompute() instead — the folders haven't changed, only the XML has.
         self._scan_installed()
         self._recompute()
 
     def _scan_installed(self) -> None:
-        # the costly part: stat every pack folder + count ELS sets. Cached in
-        # self._installed so toggles don't have to hit the disk again.
         self._installed = []
         self._els_sets = 0
         self._els_view = []
@@ -538,8 +505,6 @@ class Backend(QObject):
         self._installed = list_installed_dlc_info(paths["dlcpacks"])
 
     def _scan_els(self, els_root: Path) -> None:
-        # group els-vcf xmls by copy time so files installed together show as one
-        # expandable "folder". each group is marshalled into a QVariant-friendly dict.
         groups = group_els_by_install_time(list_installed_els(els_root))
         self._els_sets = len(groups)
         view = []
@@ -562,9 +527,6 @@ class Backend(QObject):
         self._els_view = view
 
     def _recompute(self) -> None:
-        # cheap: re-read the (small) dlclist.xml and recompute each pack's status
-        # from the cached folder list. status: active | disabled | notinlist | duplicate
-        # (single state per pack; duplicate is diagnostic and wins, matching the A2 design)
         if self._installed is None:
             self._scan_installed()
         self._packs = []
@@ -636,7 +598,7 @@ class Backend(QObject):
         if path is None:
             return
         self._toggle_one(path, name)
-        self._recompute()  # folders unchanged → skip the disk rescan
+        self._recompute()
 
     @Slot("QVariantList")
     def toggleMods(self, names) -> None:
@@ -645,7 +607,7 @@ class Backend(QObject):
             return
         for name in names:
             self._toggle_one(path, str(name))
-        self._recompute()  # folders unchanged → skip the disk rescan
+        self._recompute()
 
     def _remove_one(self, paths, name: str) -> None:
         result = uninstall_dlc(name, paths["dlcpacks"], self._group_logger("DLC"))
@@ -692,8 +654,6 @@ class Backend(QObject):
 
     @Slot("QVariantList")
     def removeElsFiles(self, paths) -> None:
-        # delete one els-vcf file or a whole install-time group. paths come straight
-        # from the model (full filesystem paths), so no game-path resolution is needed.
         paths = [str(p) for p in paths]
         if not paths:
             return
@@ -763,7 +723,6 @@ class Backend(QObject):
         self._log("XML", "info", T("repair_summary", added=added, removed=removed, kept=kept))
         self.reloadMods()
 
-    # ----- profiles (saved mod loadouts) -----
     def _find_profile(self, pid: str):
         if not pid:
             return None
@@ -773,8 +732,6 @@ class Backend(QObject):
         return None
 
     def _stash_profile(self, prof) -> None:
-        # deactivate a profile's content: move its own ELS files into "<name> unused"
-        # and comment its DLC packs out of dlclist.xml (wrapped in profile markers).
         if prof is None:
             return
         paths = self._paths()
@@ -794,8 +751,6 @@ class Backend(QObject):
                 self._log("XML", "err", T("dlclist_error", err=str(exc)))
 
     def _unstash_profile(self, prof, paths) -> None:
-        # activate a profile's content: bring its ELS files back into pack_default and
-        # re-enable (uncomment) its DLC packs in dlclist.xml.
         if prof is None:
             return
         name = prof.get("name", "")
@@ -812,8 +767,6 @@ class Backend(QObject):
                 self._log("XML", "err", T("dlclist_error", err=str(exc)))
 
     def _apply_profile(self, pid: str) -> None:
-        # activate a profile. Only one runs at a time, so first deactivate whichever
-        # profile is currently active (auto-switch), then restore this one's content.
         paths = self._paths()
         if paths is None:
             self._info(T("gta_missing_title"), T("gta_missing_body"))
@@ -836,7 +789,6 @@ class Backend(QObject):
         self.reloadMods()
 
     def _deactivate_profile(self) -> None:
-        # deactivate the running profile: stash its ELS files + comment out its DLC.
         paths = self._paths()
         if paths is None:
             return
@@ -881,7 +833,6 @@ class Backend(QObject):
             self._log("INFO", "ok", T("profile_created", name=name))
         self.config.save()
         self.profilesChanged.emit()
-        # if we just edited the running profile, re-apply so the change takes effect
         if found is not None and edit_id == self.config.active_profile:
             self._apply_profile(edit_id)
 
@@ -894,8 +845,6 @@ class Backend(QObject):
                              T("profile_delete_body", name=prof.get("name", "")),
                              confirm_label=T("manage_remove_btn"), danger=True):
             return
-        # bring the profile's files/entries back to the live folder first so a stashed
-        # (deactivated) profile doesn't leave its ELS orphaned in "<name> unused".
         paths = self._paths()
         if paths is not None:
             self._unstash_profile(prof, paths)
@@ -907,9 +856,7 @@ class Backend(QObject):
         self.reloadMods()
         self._log("INFO", "ok", T("profile_deleted", name=prof.get("name", "")))
 
-    # ----- custom drop zones (Install page) -----
     def _default_zones(self) -> list:
-        # classic behaviour: one full-size auto-installer zone covering the 2x2 grid
         return [{
             "id": "auto", "name": T("zone_default_name"), "auto": True,
             "rel": "", "color": "", "col": 0, "row": 0, "w": 2, "h": 2,
@@ -925,7 +872,6 @@ class Backend(QObject):
         return None
 
     def _zone_target(self, zone):
-        # absolute target folder for a custom zone, guaranteed to stay inside the GTA root
         gta = self.config.gta_path
         if not gta:
             return None
@@ -962,7 +908,6 @@ class Backend(QObject):
     dropZones = Property("QVariantList", _get_drop_zones, notify=zonesChanged)
 
     def _get_zone_presets(self):
-        # quick-pick target folders, expressed relative to the GTA root (mode-aware)
         presets = []
         seen = set()
 
@@ -993,7 +938,6 @@ class Backend(QObject):
 
     @Slot("QVariant")
     def saveZone(self, spec) -> None:
-        # spec is the JS object from the QML editor: {id, name, auto, rel, color, col, row, w, h}
         if not isinstance(spec, dict):
             return
         auto = bool(spec.get("auto"))
@@ -1036,7 +980,6 @@ class Backend(QObject):
     @Slot(str)
     def removeZone(self, zone_id: str) -> None:
         zones = [dict(z) for z in self._zones() if z.get("id") != zone_id]
-        # empty list re-seeds the default auto zone, so the grid is never blank
         self.config.drop_zones = zones
         self.config.save()
         self.zonesChanged.emit()
@@ -1088,7 +1031,7 @@ class Backend(QObject):
     def dropToZone(self, zone_id, urls) -> None:
         zone = self._find_zone(zone_id)
         if zone is None or zone.get("auto"):
-            self.handleDrop(urls)   # auto zone → the smart detector
+            self.handleDrop(urls)
             return
         self._install_to_zone(self._urls_to_paths(urls), zone)
 
@@ -1141,9 +1084,7 @@ class Backend(QObject):
         self.summaryChanged.emit()
         self.reloadMods()
 
-    # ----- file renamer (Dateien-Umbenenner tab) -----
     def _rename_presets(self) -> list:
-        # empty stored list → seed the defaults (analogous to the drop_zones logic)
         return self.config.rename_presets or [
             {"id": f"std-{model}", "name": name, "model": model}
             for name, model in renamer.DEFAULT_PRESETS
@@ -1157,7 +1098,6 @@ class Backend(QObject):
     renamePresets = Property("QVariantList", _get_rename_presets, notify=renamePresetsChanged)
 
     def _get_rename_groups(self):
-        # detected base-name candidates, most files first (ties alphabetical)
         groups = renamer.group_by_base(self._rename_files)
         return [
             {"base": base, "count": len(files)}
@@ -1170,7 +1110,6 @@ class Backend(QObject):
     renameBase = Property(str, _get_rename_base, notify=renameChanged)
 
     def _get_rename_files(self):
-        # files of the selected set, split for the QML preview (new name = model+suffix+ext)
         out = []
         for f in self._rename_files:
             if not renamer.is_renameable(f):
@@ -1183,7 +1122,6 @@ class Backend(QObject):
     renameFiles = Property("QVariantList", _get_rename_files, notify=renameChanged)
 
     def _get_rename_skipped(self):
-        # dropped files that won't be renamed: foreign extension or a different set
         skipped = 0
         for f in self._rename_files:
             if not renamer.is_renameable(f):
@@ -1200,7 +1138,6 @@ class Backend(QObject):
     renameDest = Property(str, _get_rename_dest, notify=renameChanged)
 
     def _rename_selected(self) -> list:
-        # Paths of the currently selected set (base matches, renameable extension)
         out = []
         for f in self._rename_files:
             if not renamer.is_renameable(f):
@@ -1211,8 +1148,6 @@ class Backend(QObject):
         return out
 
     def _rename_els_dir(self):
-        # ELS target while the setting is on and a valid GTA path exists, else None.
-        # Mirrors the install pipeline's target (_install_els_src).
         if not self.config.rename_xml_to_els:
             return None
         paths = self._paths()
@@ -1227,8 +1162,6 @@ class Backend(QObject):
         )
 
     def _get_rename_needs_dest(self):
-        # does any file of the selected set go to the model destination folder?
-        # (an empty selection keeps the "pick a folder" warning visible)
         files = self._rename_selected()
         if not files:
             return True
@@ -1250,7 +1183,6 @@ class Backend(QObject):
             return
         self._rename_files = files
         self._rename_base = renamer.detect_base(files)
-        # sniff once which XMLs are ELS-VCFs (list_els_xmls([f]) checks the content)
         self._rename_els_like = {
             str(f): bool(list_els_xmls(f))
             for f in files if f.suffix.lower() == ".xml"
@@ -1316,10 +1248,6 @@ class Backend(QObject):
             self._info(T("rename_no_files_title"), T("rename_no_files_body"))
             return
 
-        # route per file: model files always go to the chosen destination; ELS-VCF
-        # XMLs go to the ELS folder while the setting is on AND a GTA path exists.
-        # With the setting on but no GTA path we fall back to the destination and
-        # say so — a file is never dropped silently.
         els_dir = self._rename_els_dir()
         jobs = [(src, new_name, self._rename_routes_to_els(src)) for src, new_name in plan]
         els_fallback = (self.config.rename_xml_to_els and els_dir is None
@@ -1382,11 +1310,10 @@ class Backend(QObject):
                                 else T("rename_done_summary", n=ok))
         self.renameChanged.emit()
         if els_ok:
-            self.reloadMods()   # the ELS overview scans the disk — keep it in sync
+            self.reloadMods()
 
     @Slot("QVariant")
     def saveRenamePreset(self, spec) -> None:
-        # spec is the JS object from the QML editor: {id, name, model}
         if not isinstance(spec, dict):
             return
         name = (spec.get("name") or "").strip()
@@ -1407,13 +1334,11 @@ class Backend(QObject):
 
     @Slot(str)
     def removeRenamePreset(self, pid: str) -> None:
-        # empty list re-seeds the defaults, so the preset list is never blank
         presets = [dict(p) for p in self._rename_presets() if p.get("id") != pid]
         self.config.rename_presets = presets
         self.config.save()
         self.renamePresetsChanged.emit()
 
-    # ----- drop / install -----
     @staticmethod
     def _urls_to_paths(urls) -> list:
         srcs = []
@@ -1431,7 +1356,6 @@ class Backend(QObject):
 
     @Slot()
     def chooseArchives(self) -> None:
-        # "Dateien auswählen" / "Hinzufügen" — same pipeline as drag & drop
         if self._busy:
             return
         files, _ = QFileDialog.getOpenFileNames(
@@ -1611,7 +1535,6 @@ class Backend(QObject):
         entry = f"    <Item>dlcpacks:/{dlc_name}/</Item>"
         self._log("XML", "info", T("dlclist_hint_no_xml", entry=entry))
 
-    # ----- updates -----
     @Slot(bool)
     def checkUpdates(self, manual: bool) -> None:
         from PySide6.QtCore import QThread

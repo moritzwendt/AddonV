@@ -17,10 +17,10 @@ def test_split_stem():
     assert renamer.split_stem("FBI") == ("FBI", "")
     assert renamer.split_stem("FBI_hi") == ("FBI", "_hi")
     assert renamer.split_stem("FBI+hi") == ("FBI", "+hi")
-    assert renamer.split_stem("FBI_HI") == ("FBI", "_hi")      # case-insensitive
+    assert renamer.split_stem("FBI_HI") == ("FBI", "_hi")
     assert renamer.split_stem("FBI+Hi") == ("FBI", "+hi")
-    assert renamer.split_stem("_hi") == ("_hi", "")            # suffix alone is no suffix
-    assert renamer.split_stem("sheriff") == ("sheriff", "")    # 'hi' only as suffix token
+    assert renamer.split_stem("_hi") == ("_hi", "")
+    assert renamer.split_stem("sheriff") == ("sheriff", "")
 
 
 def test_sanitize_model():
@@ -30,7 +30,6 @@ def test_sanitize_model():
 
 
 def test_detect_and_plan_example_set(tmp: Path):
-    # the spec's example: FBI set → police2
     names = ["FBI.ytd", "FBI.yft", "FBI_hi.yft", "FBI+hi.ytd"]
     files = []
     for n in names:
@@ -38,7 +37,7 @@ def test_detect_and_plan_example_set(tmp: Path):
         f.write_bytes(b"x")
         files.append(f)
 
-    collected = renamer.collect_files([tmp])           # folder drop
+    collected = renamer.collect_files([tmp])
     assert {f.name for f in collected} == set(names)
 
     base = renamer.detect_base(collected)
@@ -55,14 +54,13 @@ def test_detect_and_plan_example_set(tmp: Path):
 
 
 def test_mixed_model_and_xml_set(tmp: Path):
-    # model files + XML configs dropped together = ONE set, all renamed alike
     names = ["FBI.yft", "FBI.ytd", "FBI_hi.yft", "FBI+hi.ytd", "FBI.xml", "FBI_hi.xml"]
     for n in names + ["carcols.xml"]:
         (tmp / n).write_bytes(b"x")
     files = renamer.collect_files([tmp])
 
     groups = renamer.group_by_base(files)
-    assert set(groups) == {"fbi", "carcols"}           # foreign xml = its own group
+    assert set(groups) == {"fbi", "carcols"}
     assert len(groups["fbi"]) == 6
 
     assert renamer.detect_base(files) == "fbi"
@@ -77,7 +75,7 @@ def test_mixed_model_and_xml_set(tmp: Path):
         "FBI.xml": "police2.xml",
         "FBI_hi.xml": "police2_hi.xml",
     }
-    assert "carcols.xml" not in got                    # not part of the selected set
+    assert "carcols.xml" not in got
 
 
 def test_mixed_sets_and_foreign_files(tmp: Path):
@@ -86,12 +84,11 @@ def test_mixed_sets_and_foreign_files(tmp: Path):
     files = renamer.collect_files([tmp])
 
     groups = renamer.group_by_base(files)
-    assert set(groups) == {"fbi", "police"}            # readme.txt ignored
+    assert set(groups) == {"fbi", "police"}
     assert len(groups["fbi"]) == 3 and len(groups["police"]) == 1
 
-    assert renamer.detect_base(files) == "fbi"         # most common candidate wins
+    assert renamer.detect_base(files) == "fbi"
 
-    # plan only renames the selected set; foreign/other files are excluded
     plan = renamer.plan_renames(files, "fbi", "sheriff")
     assert {new for _, new in plan} == {"sheriff.ytd", "sheriff.yft", "sheriff_hi.yft"}
     plan2 = renamer.plan_renames(files, "police", "fbi2")
@@ -100,12 +97,9 @@ def test_mixed_sets_and_foreign_files(tmp: Path):
 
 def test_routes_to_els():
     xml, yft = Path("FBI.xml"), Path("FBI.yft")
-    # setting off / no ELS folder available → never route to ELS
     assert not renamer.routes_to_els(xml, False, True)
     assert not renamer.routes_to_els(xml, True, False)
-    # model files always stay with the destination folder
     assert not renamer.routes_to_els(yft, True, True)
-    # xml routes while on + available; optional content check narrows further
     assert renamer.routes_to_els(xml, True, True)
     assert renamer.routes_to_els(xml, True, True, is_els_xml=lambda p: True)
     assert not renamer.routes_to_els(xml, True, True, is_els_xml=lambda p: False)
@@ -117,7 +111,6 @@ def test_empty_and_edge_cases(tmp: Path):
     assert renamer.plan_renames([], "fbi", "police") == []
     assert renamer.plan_renames([], "", "police") == []
 
-    # uppercase extension + uppercase suffix → fully lowercase output
     f = tmp / "AMBULANCE_HI.YFT"
     f.write_bytes(b"x")
     files = renamer.collect_files([f])

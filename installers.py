@@ -50,7 +50,6 @@ def _copy_file(
 ) -> int:
     dst.parent.mkdir(parents=True, exist_ok=True)
     name = src.name
-    # copy in chunks so progress can update and the ui stays responsive on huge files
     with open(src, "rb") as fsrc, open(dst, "wb") as fdst:
         while True:
             chunk = fsrc.read(_CHUNK)
@@ -119,7 +118,6 @@ def install_dlc(
             rel = f.relative_to(pack)
             done = _copy_file(f, target / rel, done, total, progress)
     except OSError as exc:
-        # remove the half copied folder so it is not mistaken for a good install
         if target.exists():
             shutil.rmtree(target, ignore_errors=True)
         return InstallResult(
@@ -187,13 +185,10 @@ def install_path(
 @dataclass
 class InstalledDlc:
     name: str
-    created: float   # pack folder creation time (st_ctime — birth time on Windows)
+    created: float
 
 
 def list_installed_dlc_info(dlcpacks_dir: Path) -> list[InstalledDlc]:
-    # os.scandir is much faster than iterdir+stat: on Windows the DirEntry already
-    # carries is_dir()/stat() from the directory read, so the only extra syscall per
-    # folder is the dlc.rpf existence check.
     out: list[InstalledDlc] = []
     try:
         with os.scandir(dlcpacks_dir) as it:
@@ -268,12 +263,10 @@ def group_els_by_folder(src: Path) -> dict[Path, list[Path]]:
 class InstalledEls:
     path: Path
     name: str
-    mtime: float    # copy time — set by the install (source mtime is not preserved)
+    mtime: float
 
 
 def list_installed_els(els_root: Path) -> list[InstalledEls]:
-    # every els-vcf xml currently sitting under the game's ELS folder, with the
-    # time it was copied in. mirrors list_els_xmls but keeps the mtime per file.
     out: list[InstalledEls] = []
     if not els_root.is_dir():
         return out
@@ -284,8 +277,6 @@ def list_installed_els(els_root: Path) -> list[InstalledEls]:
     for x in candidates:
         if not _looks_like_els_xml(x):
             continue
-        # skip files a profile has stashed in its "<name> unused" folder — they are
-        # off (not loaded by the game) so they must not count as installed/active.
         if any(part.lower().endswith(" unused") for part in x.relative_to(els_root).parts[:-1]):
             continue
         try:
@@ -299,9 +290,6 @@ def list_installed_els(els_root: Path) -> list[InstalledEls]:
 def group_els_by_install_time(
     files: list[InstalledEls], tolerance: float = 1.0
 ) -> list[list[InstalledEls]]:
-    # files copied in one install share (bar milliseconds) the same mtime, so cluster
-    # by gap: a new group starts when the jump to the previous file exceeds `tolerance`.
-    # 1s honours the "same second" idea while bridging the sub-second jitter of a batch.
     ordered = sorted(files, key=lambda f: f.mtime)
     groups: list[list[InstalledEls]] = []
     current: list[InstalledEls] = []
@@ -315,10 +303,10 @@ def group_els_by_install_time(
     return groups
 
 
-_NAME_SPLIT_RE = re.compile(r"[ _\-.]+")          # separators between words
-_CAMEL_RE = re.compile(r"(?<=[a-z])(?=[A-Z])")    # camelCase boundary
-_LETTER_DIGIT_RE = re.compile(r"(?<=[A-Za-z])(?=[0-9])")   # police2 -> police|2
-_NAME_TRIM = " _-.0123456789"                     # never end a label on these
+_NAME_SPLIT_RE = re.compile(r"[ _\-.]+")
+_CAMEL_RE = re.compile(r"(?<=[a-z])(?=[A-Z])")
+_LETTER_DIGIT_RE = re.compile(r"(?<=[A-Za-z])(?=[0-9])")
+_NAME_TRIM = " _-.0123456789"
 
 
 def _name_tokens(stem: str) -> list[str]:
@@ -327,20 +315,14 @@ def _name_tokens(stem: str) -> list[str]:
 
 
 def derive_group_name(file_names: list[str]) -> str:
-    # a human label for an install group: the shared start of its file names
-    # (e.g. lapd1/lapd2/lapd3 -> "lapd"), or a lone file's own name. Returns "" when
-    # nothing sensible can be derived so the caller can fall back to the install date.
     stems = [os.path.splitext(n)[0].strip() for n in file_names]
     stems = [s for s in stems if s]
     if not stems:
         return ""
     if len(stems) == 1:
         return stems[0]
-    # 1) longest common prefix (case-insensitive), trimmed to a clean word boundary
     common = os.path.commonprefix([s.lower() for s in stems])
     prefix = stems[0][: len(common)]
-    # if the prefix slices through a word (some stem continues with an alnum char),
-    # cut back to the last separator so we don't keep a half word like "lapd_c"
     if any(len(s) > len(prefix) and s[len(prefix)].isalnum() for s in stems):
         sep = max(prefix.rfind(c) for c in " _-.")
         if sep > 0:
@@ -348,7 +330,6 @@ def derive_group_name(file_names: list[str]) -> str:
     prefix = prefix.rstrip(_NAME_TRIM)
     if len(prefix) >= 3:
         return prefix
-    # 2) otherwise the most frequent leading token across the group
     leads = [toks[0] for toks in (_name_tokens(s) for s in stems) if toks]
     if leads:
         winner, count = Counter(t.lower() for t in leads).most_common(1)[0]
@@ -366,7 +347,6 @@ def els_has_name_collision(groups: dict[Path, list[Path]]) -> bool:
 
 
 def _path_distance(a: Path, b: Path) -> int:
-    # folder steps between two paths up to the common ancestor then down
     ap, bp = a.parts, b.parts
     common = 0
     for x, y in zip(ap, bp):
@@ -424,7 +404,6 @@ def install_els(
         if not xmls:
             return InstallResult(False, T("els_no_xmls"))
 
-    # resolve all conflicts first then copy so the total is exact and no dialog interrupts
     to_copy = []
     skipped = 0
     for x in xmls:

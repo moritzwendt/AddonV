@@ -59,8 +59,6 @@ win = engine.rootObjects()[0]
 import shiboken6
 from PySide6.QtQuick import QQuickWindow
 ptr = int(shiboken6.getCppPointer(win)[0])
-# drop EVERY Python reference to the cached QWindow wrapper, else wrapInstance
-# returns it again instead of creating a QQuickWindow-typed one
 win = None
 gc.collect()
 qwin = shiboken6.wrapInstance(ptr, QQuickWindow)
@@ -68,7 +66,6 @@ qwin = shiboken6.wrapInstance(ptr, QQuickWindow)
 dest = sandbox / "out"
 dest.mkdir()
 
-# (page, filename, setup callable) — chained with 700ms gaps for the page fade
 steps = [
     (4, "_shot_rename_nodest.png", None),
     (4, "_shot_rename_done.png",

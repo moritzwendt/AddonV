@@ -9,9 +9,6 @@ from i18n import T
 _ITEM_RE = re.compile(r"<Item>dlcpacks:/([^/<]+)/</Item>")
 _PATHS_CLOSE_RE = re.compile(r"(\s*)</Paths>")
 _EXISTING_ITEM_INDENT_RE = re.compile(r"^([ \t]+)<Item>dlcpacks:/", re.MULTILINE)
-# a disabled pack is its item wrapped in an xml comment so the game skips it
-# but it still shows as switched off rather than missing
-# the wide regex below matches an item in either state active or commented out
 _DISABLED_RE = re.compile(r"<!--\s*<Item>dlcpacks:/([^/<]+)/</Item>\s*-->")
 _ANY_ITEM_RE = re.compile(
     r"(?:<!--\s*)?<Item>dlcpacks:/([^/<]+)/</Item>(?:\s*-->)?"
@@ -23,7 +20,6 @@ def list_entries(xml_text: str) -> list[str]:
 
 
 def list_active_entries(xml_text: str) -> list[str]:
-    # drop commented out items first so only loaded packs remain
     return _ITEM_RE.findall(_DISABLED_RE.sub("", xml_text))
 
 
@@ -55,7 +51,6 @@ def set_order(xml_text: str, ordered_names: list[str]) -> str:
     seq += [n for n in names if n not in seq]
     if seq == names:
         return xml_text
-    # refill the original item slots in the new order so only the order changes
     out: list[str] = []
     last = 0
     for m, name in zip(matches, seq):
@@ -77,7 +72,6 @@ def move_entry(xml_text: str, dlc_name: str, delta: int) -> str:
         return xml_text
     a, b = sorted((i, j))
     ma, mb = matches[a], matches[b]
-    # swap just the two item strings and leave the indentation between them
     return (
         xml_text[: ma.start()]
         + mb.group(0)
@@ -127,9 +121,6 @@ def enable_dlc_entry(xml_text: str, dlc_name: str) -> str:
     return pattern.sub(r"\1", xml_text, count=1)
 
 
-# --- profile blocks: a profile's packs get commented out together as one block,
-# wrapped in start/end marker comments that name the profile (so the user can see,
-# above and below the commented entries, which profile they belong to). ---
 _PROFILE_START = "ADDONV_START:"
 _PROFILE_END = "ADDONV_END:"
 

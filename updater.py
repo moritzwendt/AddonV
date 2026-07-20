@@ -29,7 +29,6 @@ class UpdateInfo:
 
 
 def _parse(v: str) -> tuple[int, ...]:
-    # turn a tag like "v1.2.3" into (1, 2, 3) for comparison
     return tuple(int(x) for x in re.findall(r"\d+", v)) or (0,)
 
 
@@ -47,7 +46,6 @@ def fetch_latest(timeout: int = 10) -> Optional[UpdateInfo]:
     tag = data.get("tag_name") or ""
     if not tag:
         return None
-    # prefer the Windows installer asset
     asset_url = ""
     for asset in data.get("assets") or []:
         name = (asset.get("name") or "").lower()
@@ -63,7 +61,6 @@ def fetch_latest(timeout: int = 10) -> Optional[UpdateInfo]:
 
 
 def check_for_update(timeout: int = 10) -> Optional[UpdateInfo]:
-    # returns the release only if it is newer than what is running
     info = fetch_latest(timeout=timeout)
     if info and is_newer(info.version):
         return info
@@ -89,8 +86,7 @@ def download_installer(info: UpdateInfo, progress: Optional[ProgressFn] = None) 
 
 
 def run_installer(path: Path) -> None:
-    # launch the downloaded installer; the caller then quits so files can swap
     if os.name == "nt":
-        os.startfile(str(path))  # type: ignore[attr-defined]
+        os.startfile(str(path))
     else:
         subprocess.Popen([str(path)])

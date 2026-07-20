@@ -214,12 +214,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_replace_body": "ELS '{name}' already exists in the target folder.\n\nReplace the existing file(s)?",
         "els_kept": "ELS '{name}' kept — not replaced.",
 
-        # --- ELS management page ---
         "tab_els": "ELS",
         "els_subtitle": "{groups} folder(s) · {files} file(s) — grouped by install time",
         "els_subtitle_one": "1 folder",
         "els_subtitle_many": "{n} folders",
-        # placeholder page subtitle — final copy still to be decided
         "subtitle_placeholder": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr.",
         "els_group_title": "Installed {date}",
         "els_group_count": "{n} file(s)",
@@ -233,7 +231,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "dlclist_paths_close_missing": "`</Paths>` not found in dlclist.xml — file broken?",
 
-        # --- A2 redesign UI ---
         "connected": "Connected",
         "nav_menu": "Menu",
         "safebox_title": "Safe installation",
@@ -290,7 +287,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "section_system": "System",
         "choose_archives_dialog": "Choose archives",
 
-        # --- Profiles (saved mod loadouts) ---
         "tab_profiles": "Profiles",
         "profiles_subtitle": "{count} saved loadout(s) — switch your DLC & ELS setup in one click.",
         "profiles_empty": "No profiles yet. Save your current setup as a profile.",
@@ -320,7 +316,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_dlc_commented": "dlclist.xml: DLC of profile '{name}' commented out.",
         "profile_dlc_uncommented": "dlclist.xml: DLC of profile '{name}' re-enabled.",
 
-        # --- custom drop zones (Install page) ---
         "zone_default_name": "Auto-installer",
         "zone_auto_desc": "Detects DLC, ELS & archives automatically.",
         "zone_drop_hint": "Drop files here",
@@ -377,7 +372,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zone_nothing": "Nothing usable was dropped on this zone.",
         "zone_overlap": "Zones can't overlap — pick free cells.",
 
-        # --- file renamer (vehicle replace renamer) ---
         "tab_rename": "File renamer",
         "rename_subtitle": "Rename a replace vehicle's file set to another game model — as copies, originals stay untouched.",
         "rename_drop_headline": "Drag vehicle files here",
@@ -608,12 +602,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_replace_body": "ELS '{name}' existiert bereits im Zielordner.\n\nVorhandene Datei(en) ersetzen?",
         "els_kept": "ELS '{name}' beibehalten — nicht ersetzt.",
 
-        # --- ELS-Verwaltungsseite ---
         "tab_els": "ELS",
         "els_subtitle": "{groups} Ordner · {files} Datei(en) — nach Installationszeit gruppiert",
         "els_subtitle_one": "1 Ordner",
         "els_subtitle_many": "{n} Ordner",
-        # Platzhalter-Untertitel — endgültiger Text folgt später
         "subtitle_placeholder": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr.",
         "els_group_title": "Installiert am {date}",
         "els_group_count": "{n} Datei(en)",
@@ -627,7 +619,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "dlclist_paths_close_missing": "`</Paths>` in dlclist.xml nicht gefunden — Datei kaputt?",
 
-        # --- A2 redesign UI ---
         "connected": "Verbunden",
         "nav_menu": "Menü",
         "safebox_title": "Sichere Installation",
@@ -684,7 +675,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "section_system": "System",
         "choose_archives_dialog": "Archive auswählen",
 
-        # --- Profile (gespeicherte Mod-Setups) ---
         "tab_profiles": "Profile",
         "profiles_subtitle": "{count} gespeicherte(s) Setup(s) — DLC & ELS mit einem Klick umschalten.",
         "profiles_empty": "Noch keine Profile. Speichere dein aktuelles Setup als Profil.",
@@ -714,7 +704,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_dlc_commented": "dlclist.xml: DLC von Profil '{name}' auskommentiert.",
         "profile_dlc_uncommented": "dlclist.xml: DLC von Profil '{name}' wieder aktiviert.",
 
-        # --- eigene Drop-Zonen (Installieren-Seite) ---
         "zone_default_name": "Auto-Installer",
         "zone_auto_desc": "Erkennt DLC, ELS & Archive automatisch.",
         "zone_drop_hint": "Dateien hierher ziehen",
@@ -771,7 +760,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zone_nothing": "Nichts Verwertbares auf diese Zone gezogen.",
         "zone_overlap": "Zonen dürfen sich nicht überlappen — freie Zellen wählen.",
 
-        # --- Dateien-Umbenenner (Fahrzeug-Replace-Renamer) ---
         "tab_rename": "Dateien-Umbenenner",
         "rename_subtitle": "Benenne das Datei-Set eines Replace-Fahrzeugs auf ein anderes Spiel-Modell um — als Kopie, Originale bleiben unberührt.",
         "rename_drop_headline": "Fahrzeug-Dateien hierher ziehen",
@@ -1000,7 +988,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_replace_body": "ELS '{name}' уже существует в целевой папке.\n\nЗаменить существующий файл(ы)?",
         "els_kept": "ELS '{name}' сохранён — не заменён.",
 
-        # --- Страница управления ELS ---
         "tab_els": "ELS",
         "els_subtitle": "{groups} папк(и) · {files} файл(ов) — сгруппировано по времени установки",
         "els_group_title": "Установлено {date}",
@@ -1015,7 +1002,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "dlclist_paths_close_missing": "`</Paths>` не найден в dlclist.xml — файл повреждён?",
 
-        # --- A2 redesign UI ---
         "connected": "Подключено",
         "nav_menu": "Меню",
         "safebox_title": "Безопасная установка",
@@ -1068,7 +1054,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "section_system": "Система",
         "choose_archives_dialog": "Выберите архивы",
 
-        # --- Профили (сохранённые наборы модов) ---
         "tab_profiles": "Профили",
         "profiles_subtitle": "{count} сохранённый(ых) набор(ов) — переключай DLC и ELS одним кликом.",
         "profiles_empty": "Профилей пока нет. Сохрани текущую конфигурацию как профиль.",
@@ -1097,7 +1082,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_dlc_commented": "dlclist.xml: DLC профиля '{name}' закомментированы.",
         "profile_dlc_uncommented": "dlclist.xml: DLC профиля '{name}' снова включены.",
 
-        # --- свои зоны перетаскивания (страница «Установка») ---
         "zone_default_name": "Авто-установщик",
         "zone_auto_desc": "Автоматически распознаёт DLC, ELS и архивы.",
         "zone_drop_hint": "Перетащите файлы сюда",
@@ -1326,7 +1310,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_replace_body": "ELS '{name}' ya existe en la carpeta de destino.\n\n¿Reemplazar el/los archivo(s) existente(s)?",
         "els_kept": "ELS '{name}' conservado — no reemplazado.",
 
-        # --- Página de gestión de ELS ---
         "tab_els": "ELS",
         "els_subtitle": "{groups} carpeta(s) · {files} archivo(s) — agrupados por hora de instalación",
         "els_group_title": "Instalado {date}",
@@ -1341,7 +1324,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "dlclist_paths_close_missing": "`</Paths>` no encontrado en dlclist.xml — ¿archivo dañado?",
 
-        # --- A2 redesign UI ---
         "connected": "Conectado",
         "nav_menu": "Menú",
         "safebox_title": "Instalación segura",
@@ -1394,7 +1376,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "section_system": "Sistema",
         "choose_archives_dialog": "Elegir archivos comprimidos",
 
-        # --- Perfiles (configuraciones de mods guardadas) ---
         "tab_profiles": "Perfiles",
         "profiles_subtitle": "{count} configuración(es) guardada(s) — cambia tu setup de DLC y ELS con un clic.",
         "profiles_empty": "Aún no hay perfiles. Guarda tu configuración actual como perfil.",
@@ -1423,7 +1404,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_dlc_commented": "dlclist.xml: DLC del perfil '{name}' comentados.",
         "profile_dlc_uncommented": "dlclist.xml: DLC del perfil '{name}' reactivados.",
 
-        # --- zonas de arrastre propias (página Instalar) ---
         "zone_default_name": "Instalador automático",
         "zone_auto_desc": "Detecta DLC, ELS y archivos automáticamente.",
         "zone_drop_hint": "Suelta los archivos aquí",

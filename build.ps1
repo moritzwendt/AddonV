@@ -1,12 +1,12 @@
-# Local build script: produces installer/output/AddonV-Setup-<ver>.exe
-#
-# Usage:
-#   .\build.ps1                 # builds dev version (0.0.0-dev)
-#   .\build.ps1 -Version 1.0.0  # tagged build
-#
-# Requirements on the machine running this script:
-#   - Python 3.10+ with PySide6 + pyinstaller installed
-#   - Inno Setup 6 installed (ISCC.exe on PATH or at the default location)
+
+
+
+
+
+
+
+
+
 
 param(
     [string]$Version = "0.0.0-dev"

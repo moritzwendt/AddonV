@@ -11,7 +11,6 @@ UNUSED_SUFFIX = " unused"
 
 
 def safe_folder_name(name: str) -> str:
-    # strip characters Windows forbids in folder names; keep it human readable
     cleaned = "".join(c for c in name if c.isalnum() or c in " _-").strip()
     return cleaned or "profile"
 
@@ -34,8 +33,6 @@ def stash_els(
     file_names,
     log: Optional[LogFn] = None,
 ) -> int:
-    # move the profile's own ELS files out of the live ELS tree into "<name> unused".
-    # returns how many files were moved.
     if not els_root.is_dir() or not file_names:
         return 0
     wanted = set(file_names)
@@ -53,7 +50,7 @@ def stash_els(
                 moved += 1
             except OSError:
                 pass
-            break  # one file per name is enough
+            break
     if moved and log:
         log(moved)
     return moved
@@ -64,8 +61,6 @@ def restore_els(
     profile_name: str,
     log: Optional[LogFn] = None,
 ) -> int:
-    # move the profile's stashed files back into pack_default, then delete the now
-    # empty "<name> unused" folder. returns how many files were restored.
     src = unused_dir(els_root, profile_name)
     if not src.is_dir():
         return 0

@@ -51,7 +51,7 @@ def run() -> None:
     if os.path.exists(icon_path):
         app.setWindowIcon(QIcon(icon_path))
 
-    backend = Backend()  # first-run language dialog happens here
+    backend = Backend()
 
     engine = QQmlApplicationEngine()
     engine.rootContext().setContextProperty("backend", backend)

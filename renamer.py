@@ -13,24 +13,14 @@ free of Qt so the logic is unit-testable (backend.py wraps them in Slots).
 import re
 from pathlib import Path
 
-# high-detail suffixes preserved during renaming (lowercase; extend to support
-# further variants). Matched case-insensitively at the end of the file stem.
 HI_SUFFIXES: tuple[str, ...] = ("_hi", "+hi")
 
-# extensions that belong to a vehicle model file set (lowercase, with dot)
 MODEL_EXTS: tuple[str, ...] = (".yft", ".ytd")
 
-# everything the renamer treats as part of a vehicle set: model files plus the
-# XML configs (e.g. ELS-VCF) that ship alongside and share the vehicle's name
 RENAME_EXTS: tuple[str, ...] = MODEL_EXTS + (".xml",)
 
-# GTA model names: lowercase letters/digits plus the few separators that appear
-# in file names. Everything else is stripped so a preset can never produce an
-# invalid or path-escaping file name.
 _MODEL_RE = re.compile(r"[^a-z0-9_+\-]")
 
-# default target presets seeded when the stored list is empty (display names are
-# German on purpose — the app is German-first and presets are editable user data)
 DEFAULT_PRESETS: tuple[tuple[str, str], ...] = (
     ("Polizei", "police"),
     ("Polizei 2", "police2"),
@@ -39,7 +29,7 @@ DEFAULT_PRESETS: tuple[tuple[str, str], ...] = (
     ("FBI", "fbi"),
     ("FBI 2", "fbi2"),
     ("Ambulanz", "ambulance"),
-    ("Polw", "policeold1"),      # uncertain mapping — plausible placeholder, editable
+    ("Polw", "policeold1"),
     ("Police T", "policet"),
     ("Police B", "policeb"),
     ("Sheriff", "sheriff"),

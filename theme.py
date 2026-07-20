@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-# flat dark palette shared across the app; the accent colour is user-selectable
 BG = "#1b1c1f"
 PANEL = "#232428"
 PANEL2 = "#2a2c31"

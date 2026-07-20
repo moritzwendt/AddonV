@@ -1010,24 +1010,14 @@ ApplicationWindow {
                                     anchors.fill: parent
                                     anchors.leftMargin: 16
                                     anchors.rightMargin: 16
-                                    RowLayout {
-                                        spacing: 9
-                                        Rectangle {
-                                            width: 7; height: 7; radius: 3.5; color: th.glyphOk
-                                            Rectangle {
-                                                anchors.centerIn: parent; width: 13; height: 13; radius: 6.5
-                                                color: root.rgba(th.glyphOk, 0.22); z: -1
-                                            }
-                                        }
-                                        Text {
-                                            text: "install.log"
-                                            color: th.dim
-                                            font.family: th.mono; font.pixelSize: 12; font.weight: Font.DemiBold
-                                        }
+                                    Text {
+                                        text: root.ui("install_log_title")
+                                        color: th.dim
+                                        font.family: th.ui; font.pixelSize: 12; font.weight: Font.DemiBold
                                     }
                                     Item { Layout.fillWidth: true }
                                     Text {
-                                        text: "auto-scroll"
+                                        text: root.ui("log_autoscroll")
                                         color: th.faint
                                         font.family: th.mono; font.pixelSize: 11
                                     }
@@ -1090,6 +1080,7 @@ ApplicationWindow {
                                 Layout.fillWidth: true
                                 Layout.leftMargin: 16
                                 Layout.rightMargin: 16
+                                Layout.bottomMargin: 12
                                 Layout.preferredHeight: 4
                                 radius: 2
                                 visible: progressBar.frac >= 0
@@ -1103,34 +1094,6 @@ ApplicationWindow {
                             }
 
 
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 38
-                                Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: th.divider }
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 16
-                                    anchors.rightMargin: 16
-                                    spacing: 8
-                                    Text {
-                                        text: {
-                                            var s = backend.installState
-                                            var g = s === "done" ? "✓" : s === "running" ? "→" : "•"
-                                            var k = s === "done" ? "log_status_done" : s === "running" ? "log_status_running" : "log_status_ready"
-                                            return g + " " + root.ui(k)
-                                        }
-                                        color: backend.installState === "done" ? th.glyphOk : th.faint
-                                        font.family: th.mono; font.pixelSize: 11
-                                    }
-                                    Item { Layout.fillWidth: true }
-                                    Text {
-                                        text: backend.lastSummary
-                                        visible: backend.lastSummary.length > 0
-                                        color: th.faint
-                                        font.family: th.mono; font.pixelSize: 11
-                                    }
-                                }
-                            }
                         }
                     }
 
@@ -1146,7 +1109,6 @@ ApplicationWindow {
                             anchors.leftMargin: 18
                             anchors.rightMargin: 18
                             spacing: 14
-                            StatusDot { status: backend.gtaPathValid ? "active" : "notinlist"; ring: true }
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 2
@@ -1821,8 +1783,10 @@ ApplicationWindow {
                                     AvIcon { path: ico.folder; size: 18; color: th.accent }
                                     ColumnLayout {
                                         Layout.fillWidth: true
+                                        Layout.minimumWidth: 0
                                         spacing: 0
                                         Text {
+                                            Layout.fillWidth: true
                                             text: groupCol.modelData.name.length > 0
                                                   ? groupCol.modelData.name
                                                   : root.ui("els_group_title").replace("{date}", groupCol.modelData.added.split(" ")[0])
@@ -1831,13 +1795,16 @@ ApplicationWindow {
                                             elide: Text.ElideRight
                                         }
                                         Text {
+                                            Layout.fillWidth: true
                                             text: groupCol.modelData.added
                                             color: th.faint
                                             font.family: th.mono; font.pixelSize: 10
+                                            elide: Text.ElideRight
                                         }
                                     }
                                     Text {
                                         Layout.preferredWidth: 150
+                                        Layout.alignment: Qt.AlignVCenter
                                         text: root.ui("els_group_count").replace("{n}", groupCol.modelData.count)
                                         color: th.dim
                                         font.family: th.ui; font.pixelSize: 12
@@ -2239,85 +2206,95 @@ ApplicationWindow {
                         radius: th.rMd
                         color: th.card
                         border.color: th.cardBorder
-                        implicitHeight: detectedCol.implicitHeight + 32
+                        implicitHeight: detectedCol.implicitHeight
                         ColumnLayout {
                             id: detectedCol
                             anchors.left: parent.left
                             anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.leftMargin: 18
-                            anchors.rightMargin: 18
-                            spacing: 6
-                            Text {
-                                text: root.ui("rename_detected_eyebrow")
-                                color: th.faint
-                                font.family: th.ui; font.pixelSize: 10; font.weight: Font.DemiBold
-                                font.letterSpacing: 0.8; font.capitalization: Font.AllUppercase
-                            }
-                            RowLayout {
-                                spacing: 10
-                                StatusDot {
-                                    status: backend.renameBase.length > 0 ? "active" : "disabled"
-                                    ring: true
-                                }
-                                Text {
-                                    text: backend.renameBase.length > 0
-                                          ? backend.renameBase : root.ui("rename_none_short")
-                                    color: backend.renameBase.length > 0 ? th.textHi : th.faint
-                                    font.family: th.disp; font.pixelSize: 20; font.weight: Font.DemiBold
-                                    elide: Text.ElideRight
-                                }
-                                Text {
-                                    visible: backend.renameFiles.length > 0
-                                    text: root.ui("rename_files_count").replace("{n}", backend.renameFiles.length)
-                                    color: th.mute
-                                    font.family: th.mono; font.pixelSize: 12
-                                }
-                                Item { Layout.fillWidth: true }
-                            }
-                            Text {
-                                visible: backend.renameGroups.length > 1
-                                text: root.ui("rename_multi_hint")
-                                color: th.stNotinText
-                                font.family: th.ui; font.pixelSize: 12
-                            }
-                            Flow {
-                                visible: backend.renameGroups.length > 1
+                            anchors.top: parent.top
+                            spacing: 0
+                            Item {
                                 Layout.fillWidth: true
-                                spacing: 7
-                                Repeater {
-                                    model: backend.renameGroups
-                                    delegate: Rectangle {
-                                        required property var modelData
-                                        property bool on: backend.renameBase === modelData.base
-                                        height: 28
-                                        width: chipLbl.implicitWidth + 22
-                                        radius: th.rSm
-                                        color: on ? root.acc(0.16) : th.ghostBg
-                                        border.width: 1
-                                        border.color: on ? root.acc(0.4) : th.ghostBorder
-                                        Text {
-                                            id: chipLbl
-                                            anchors.centerIn: parent
-                                            text: modelData.base + " · " + modelData.count
-                                            color: parent.on ? th.accentText : th.ghostText
-                                            font.family: th.mono; font.pixelSize: 12
-                                        }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: backend.renameSelectBase(modelData.base)
+                                Layout.preferredHeight: 42
+                                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: th.divider }
+                                Text {
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 16
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: root.ui("rename_detected_eyebrow")
+                                    color: th.dim
+                                    font.family: th.ui; font.pixelSize: 12; font.weight: Font.DemiBold
+                                }
+                            }
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                Layout.leftMargin: 16
+                                Layout.rightMargin: 16
+                                Layout.topMargin: 14
+                                Layout.bottomMargin: 16
+                                spacing: 6
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 10
+                                    Text {
+                                        text: backend.renameBase.length > 0
+                                              ? backend.renameBase : root.ui("rename_none_short")
+                                        color: backend.renameBase.length > 0 ? th.textHi : th.faint
+                                        font.family: th.disp; font.pixelSize: 20; font.weight: Font.DemiBold
+                                        elide: Text.ElideRight
+                                    }
+                                    Text {
+                                        visible: backend.renameFiles.length > 0
+                                        text: root.ui("rename_files_count").replace("{n}", backend.renameFiles.length)
+                                        color: th.mute
+                                        font.family: th.mono; font.pixelSize: 12
+                                    }
+                                    Item { Layout.fillWidth: true }
+                                }
+                                Text {
+                                    visible: backend.renameGroups.length > 1
+                                    text: root.ui("rename_multi_hint")
+                                    color: th.stNotinText
+                                    font.family: th.ui; font.pixelSize: 12
+                                }
+                                Flow {
+                                    visible: backend.renameGroups.length > 1
+                                    Layout.fillWidth: true
+                                    spacing: 7
+                                    Repeater {
+                                        model: backend.renameGroups
+                                        delegate: Rectangle {
+                                            required property var modelData
+                                            property bool on: backend.renameBase === modelData.base
+                                            height: 28
+                                            width: chipLbl.implicitWidth + 22
+                                            radius: th.rSm
+                                            color: on ? root.acc(0.16) : th.ghostBg
+                                            border.width: 1
+                                            border.color: on ? root.acc(0.4) : th.ghostBorder
+                                            Text {
+                                                id: chipLbl
+                                                anchors.centerIn: parent
+                                                text: modelData.base + " · " + modelData.count
+                                                color: parent.on ? th.accentText : th.ghostText
+                                                font.family: th.mono; font.pixelSize: 12
+                                            }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: backend.renameSelectBase(modelData.base)
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            Text {
-                                visible: backend.renameSkipped > 0
-                                Layout.fillWidth: true
-                                text: root.ui("rename_skipped_note").replace("{n}", backend.renameSkipped)
-                                color: th.mute
-                                font.family: th.ui; font.pixelSize: 11
-                                wrapMode: Text.WordWrap
+                                Text {
+                                    visible: backend.renameSkipped > 0
+                                    Layout.fillWidth: true
+                                    text: root.ui("rename_skipped_note").replace("{n}", backend.renameSkipped)
+                                    color: th.mute
+                                    font.family: th.ui; font.pixelSize: 11
+                                    wrapMode: Text.WordWrap
+                                }
                             }
                         }
                     }
@@ -2525,32 +2502,36 @@ ApplicationWindow {
                                                             && backend.renameNeedsDest
                         Layout.fillWidth: true
                         Layout.fillHeight: false
-                        Layout.preferredHeight: 80
+                        Layout.preferredHeight: 96
                         radius: th.rMd
+                        clip: true
                         color: destMissing ? root.rgba(th.stDupDot, 0.06) : th.card
                         border.width: destMissing ? 1.5 : 1
                         border.color: destMissing ? root.rgba(th.stDupDot, 0.55) : th.cardBorder
                         Behavior on border.color { ColorAnimation { duration: 150 } }
                         Behavior on color { ColorAnimation { duration: 150 } }
-                        RowLayout {
+                        ColumnLayout {
                             anchors.fill: parent
-                            anchors.leftMargin: 18
-                            anchors.rightMargin: 18
-                            spacing: 14
-                            StatusDot {
-                                status: backend.renameDest.length > 0 ? "active"
-                                        : destCard.destMissing ? "duplicate" : "disabled"
-                                ring: true
-                            }
-                            ColumnLayout {
+                            spacing: 0
+                            Item {
                                 Layout.fillWidth: true
-                                spacing: 2
+                                Layout.preferredHeight: 42
+                                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: th.divider }
                                 Text {
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 16
+                                    anchors.verticalCenter: parent.verticalCenter
                                     text: root.ui("rename_dest_eyebrow")
-                                    color: th.faint
-                                    font.family: th.ui; font.pixelSize: 10; font.weight: Font.DemiBold
-                                    font.letterSpacing: 0.8; font.capitalization: Font.AllUppercase
+                                    color: th.dim
+                                    font.family: th.ui; font.pixelSize: 12; font.weight: Font.DemiBold
                                 }
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                Layout.leftMargin: 16
+                                Layout.rightMargin: 16
+                                spacing: 14
                                 Text {
                                     Layout.fillWidth: true
                                     text: backend.renameDest.length > 0 ? backend.renameDest
@@ -2562,11 +2543,11 @@ ApplicationWindow {
                                     font.weight: destCard.destMissing ? Font.DemiBold : Font.Normal
                                     elide: Text.ElideMiddle
                                 }
-                            }
-                            AvButton {
-                                kind: "ghost"; size: "sm"; iconPath: ico.folder
-                                text: root.ui("change_btn")
-                                onClicked: backend.renameChooseDest()
+                                AvButton {
+                                    kind: "ghost"; size: "sm"; iconPath: ico.folder
+                                    text: root.ui("change_btn")
+                                    onClicked: backend.renameChooseDest()
+                                }
                             }
                         }
                     }

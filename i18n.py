@@ -57,14 +57,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tab_install": "Install",
         "tab_mods": "DLC packs",
         "tab_settings": "Settings",
-        "history_restored": "— previous session —",
+        "history_restored": "previous session",
         "update_available_title": "Update available",
         "update_available_body": "AddonV {version} is available (you have {current}).\n\nDownload and install it now?",
         "update_install_btn": "Install now",
         "update_later_btn": "Later",
         "update_never_btn": "Don't show again",
         "update_none": "You are on the latest version ({current}).",
-        "update_check_failed": "Could not check for updates — check your internet connection.",
+        "update_check_failed": "Could not check for updates, check your internet connection.",
         "update_downloading": "Downloading update…",
         "update_download_failed": "Download failed: {err}",
         "update_available_log": "Update available: version {version}.",
@@ -98,9 +98,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlclist_entry_removed": "dlclist.xml: entry for '{name}' removed.",
         "dlclist_disabled": "dlclist.xml: '{name}' disabled (commented out).",
         "dlclist_enabled": "dlclist.xml: '{name}' enabled.",
-        "dlclist_duplicate": "dlclist.xml: '{name}' is listed more than once — remove the duplicate.",
+        "dlclist_duplicate": "dlclist.xml: '{name}' is listed more than once, remove the duplicate.",
 
-        "repair_none": "dlclist.xml: nothing to repair — list matches installed packs.",
+        "repair_none": "dlclist.xml: nothing to repair, list matches installed packs.",
         "repair_added": "dlclist.xml: re-added missing entry for '{name}'.",
         "repair_removed": "dlclist.xml: removed entry for missing '{name}'.",
         "repair_missing_title": "Folder missing",
@@ -112,10 +112,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "choose_gta_btn": "Choose GTA path…",
         "gta_path_label": "GTA path:  {path}",
-        "gta_path_unset": "GTA path:  (not set — please choose)",
-        "mods_checkbox": "Install into /mods subfolder (recommended — keeps original files untouched)",
+        "gta_path_unset": "GTA path:  (not set, please choose)",
+        "mods_checkbox": "Install into /mods subfolder (recommended, keeps original files untouched)",
         "mode_safe": "Mode: safe (mods/)",
-        "mode_direct": "Mode: DIRECT — original files will be modified!",
+        "mode_direct": "Mode: DIRECT, original files will be modified!",
 
         "drop_zone_title": "Drop mods here",
         "drop_zone_hint": (
@@ -125,7 +125,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "DLC → mods/update/x64/dlcpacks (+ dlclist.xml) · ELS → ELS/pack_default."
         ),
         "drop_unknown": (
-            "Couldn't tell what '{name}' is — drop a DLC folder "
+            "Couldn't tell what '{name}' is, drop a DLC folder "
             "(containing dlc.rpf) or ELS-VCF .xml file(s)."
         ),
 
@@ -133,7 +133,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "archive_extracted": "Extracted '{name}'.",
         "archive_failed": "Could not extract '{name}': {err}",
         "archive_corrupt": (
-            "'{name}' looks corrupted or incomplete — try downloading it again."
+            "'{name}' looks corrupted or incomplete, try downloading it again."
         ),
         "archive_unsupported": (
             "Can't open '{name}': {fmt} archives need 7-Zip installed. "
@@ -143,13 +143,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlclist_btn": "Choose dlclist.xml…",
         "dlclist_clear_btn": "reset",
         "dlclist_label": "dlclist.xml:  {path}",
-        "dlclist_unset": "dlclist.xml:  (optional — extracted file for automatic editing)",
+        "dlclist_unset": "dlclist.xml:  (optional, extracted file for automatic editing)",
 
         "gta_detected": "GTA detected automatically: {path}",
-        "gta_not_detected": "Note: GTA path not detected automatically — please choose above.",
+        "gta_not_detected": "Note: GTA path not detected automatically, please choose above.",
         "gta_path_set": "GTA path set: {path}",
         "dlclist_set": "dlclist.xml set: {path}",
-        "direct_enabled": "Direct installation enabled — original files will be modified.",
+        "direct_enabled": "Direct installation enabled, original files will be modified.",
         "safe_enabled": "Safe installation enabled (mods/ subfolder).",
         "dlclist_added": "dlclist.xml: entry for '{name}' added.",
         "dlclist_existed": "dlclist.xml: entry for '{name}' already present.",
@@ -166,7 +166,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "invalid_folder_body": "This folder doesn't contain GTA5.exe / GTAVLauncher.exe.",
         "choose_gta_dialog": "Choose GTA installation folder",
         "choose_dlclist_dialog": "Choose extracted dlclist.xml",
-        "direct_warning_title": "Direct installation – Warning!",
+        "direct_warning_title": "Direct installation, Warning!",
         "direct_warning_body": (
             "You are about to install mods directly into the GTA main folder.\n\n"
             "Risks:\n"
@@ -192,7 +192,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_no_xmls": "No ELS-VCF XML files found.",
         "els_copy_failed": "Could not install ELS '{name}': {err}",
         "els_copy_failed_partial": "Stopped after {copied} file(s): could not copy '{name}': {err}",
-        "els_summary": "ELS — {copied} file(s) installed, {skipped} kept.",
+        "els_summary": "ELS, {copied} file(s) installed, {skipped} kept.",
 
         "els_pick_title": "Choose ELS variant",
         "els_pick_hint": (
@@ -202,20 +202,20 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_pick_count": "{n} file(s)",
         "els_pick_recommended": "★ closest to the pack",
         "els_pick_root": "(top level)",
-        "els_variant_chosen": "ELS — installing variant from '{folder}'.",
-        "els_variant_skipped": "ELS — variant selection cancelled, skipped.",
+        "els_variant_chosen": "ELS, installing variant from '{folder}'.",
+        "els_variant_skipped": "ELS, variant selection cancelled, skipped.",
 
         "drop_nothing": "Nothing usable was dropped (only files and folders are supported).",
         "unexpected_error": "Unexpected error: {err}",
 
         "replace_title": "Replace?",
         "dlc_replace_body": "DLC '{name}' already exists.\n\nReplace the existing version?",
-        "dlc_kept": "DLC '{name}' kept — not replaced.",
+        "dlc_kept": "DLC '{name}' kept, not replaced.",
         "els_replace_body": "ELS '{name}' already exists in the target folder.\n\nReplace the existing file(s)?",
-        "els_kept": "ELS '{name}' kept — not replaced.",
+        "els_kept": "ELS '{name}' kept, not replaced.",
 
         "tab_els": "ELS",
-        "els_subtitle": "{groups} folder(s) · {files} file(s) — grouped by install time",
+        "els_subtitle": "{groups} folder(s) · {files} file(s), grouped by install time",
         "els_subtitle_one": "1 folder",
         "els_subtitle_many": "{n} folders",
         "subtitle_placeholder": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr.",
@@ -229,16 +229,18 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_file_removed": "Removed ELS file '{name}'.",
         "els_remove_failed": "Could not remove '{name}': {err}",
 
-        "dlclist_paths_close_missing": "`</Paths>` not found in dlclist.xml — file broken?",
+        "dlclist_paths_close_missing": "`</Paths>` not found in dlclist.xml, file broken?",
 
         "connected": "Connected",
         "nav_menu": "Menu",
         "safebox_title": "Safe installation",
         "unsafe_title": "Unsafe installation",
-        "safebox_desc": "Writes only to mods/ — originals stay untouched.",
-        "install_subtitle": "Drop archives — AddonV extracts, detects & installs DLC, ELS & XML content automatically.",
+        "safebox_desc": "Writes only to mods/, originals stay untouched.",
+        "install_subtitle": "Drop archives, AddonV extracts, detects & installs DLC, ELS & XML content automatically.",
         "drop_headline": "Drag archives here",
-        "drop_formats": ".zip · .rar · .7z · .oiv — or folder",
+        "drop_formats": ".zip · .rar · .7z · .oiv, or folder",
+        "install_log_title": "Log",
+        "log_autoscroll": "Autoscroll",
         "choose_files_btn": "Choose files",
         "metric_packs_active": "Packs active",
         "metric_els_sets": "ELS sets",
@@ -288,7 +290,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "choose_archives_dialog": "Choose archives",
 
         "tab_profiles": "Profiles",
-        "profiles_subtitle": "{count} saved loadout(s) — switch your DLC & ELS setup in one click.",
+        "profiles_subtitle": "{count} saved loadout(s), switch your DLC & ELS setup in one click.",
         "profiles_empty": "No profiles yet. Save your current setup as a profile.",
         "profiles_new_btn": "New profile",
         "profile_count": "{dlc} DLC · {els} ELS",
@@ -305,14 +307,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_editor_empty": "Nothing installed.",
         "profile_no_path": "Set your GTA path first (Install tab) to use profiles.",
         "profile_delete_title": "Delete profile?",
-        "profile_delete_body": "Delete the profile '{name}'?\n\nYour installed mods stay untouched — only the saved loadout is removed.",
+        "profile_delete_body": "Delete the profile '{name}'?\n\nYour installed mods stay untouched, only the saved loadout is removed.",
         "profile_created": "Profile '{name}' created.",
         "profile_saved": "Profile '{name}' updated.",
         "profile_deleted": "Profile '{name}' deleted.",
         "profile_activated": "Profile '{name}' activated.",
         "profile_deactivated": "Profile '{name}' deactivated.",
-        "profile_els_stashed": "ELS — {n} file(s) moved into '{name} unused'.",
-        "profile_els_restored": "ELS — {n} file(s) restored from '{name} unused'.",
+        "profile_els_stashed": "ELS, {n} file(s) moved into '{name} unused'.",
+        "profile_els_restored": "ELS, {n} file(s) restored from '{name} unused'.",
         "profile_dlc_commented": "dlclist.xml: DLC of profile '{name}' commented out.",
         "profile_dlc_uncommented": "dlclist.xml: DLC of profile '{name}' re-enabled.",
 
@@ -329,7 +331,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zone_edit": "Edit",
         "zone_remove": "Remove",
         "section_zones": "Drop zones",
-        "zones_settings_desc": "Split the drop area into up to 4 targets — files dropped on a zone are copied straight into its folder.",
+        "zones_settings_desc": "Split the drop area into up to 4 targets, files dropped on a zone are copied straight into its folder.",
         "zone_editor_new_title": "New drop zone",
         "zone_editor_edit_title": "Edit drop zone",
         "zone_name_placeholder": "Name, e.g. Scripts",
@@ -367,20 +369,20 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zone_copy_failed": "Could not copy '{name}': {err}",
         "zone_exists": "'{name}' already exists in the target folder.",
         "zone_replace_body": "'{name}' already exists in the target folder.\n\nReplace it?",
-        "zone_kept": "'{name}' kept — not replaced.",
+        "zone_kept": "'{name}' kept, not replaced.",
         "zone_summary": "{n} item(s) → {name}",
         "zone_nothing": "Nothing usable was dropped on this zone.",
-        "zone_overlap": "Zones can't overlap — pick free cells.",
+        "zone_overlap": "Zones can't overlap, pick free cells.",
 
         "tab_rename": "File renamer",
-        "rename_subtitle": "Rename a replace vehicle's file set to another game model — as copies, originals stay untouched.",
+        "rename_subtitle": "Rename a replace vehicle's file set to another game model, as copies, originals stay untouched.",
         "rename_drop_headline": "Drag vehicle files here",
-        "rename_drop_formats": ".yft · .ytd · .xml — files or a folder",
+        "rename_drop_formats": ".yft · .ytd · .xml, files or a folder",
         "rename_choose_files_dialog": "Choose vehicle files",
         "rename_detected_eyebrow": "Detected vehicle",
         "rename_none_short": "nothing detected",
         "rename_files_count": "{n} file(s)",
-        "rename_multi_hint": "Multiple sets detected — pick the right one:",
+        "rename_multi_hint": "Multiple sets detected, pick the right one:",
         "rename_skipped_note": "{n} file(s) will be ignored (different set or foreign format).",
         "rename_preview_label": "Preview",
         "rename_preview_empty": "Drop files and pick a target to see the preview.",
@@ -397,18 +399,18 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "rename_running": "Copying files…",
         "rename_done_summary": "{n} file(s) copied",
         "rename_detected": "Vehicle detected: '{base}' ({n} file(s)).",
-        "rename_multi_log": "{n} different sets detected — please pick one.",
+        "rename_multi_log": "{n} different sets detected, please pick one.",
         "rename_no_files_title": "No files",
         "rename_no_files_body": "Drop or choose the vehicle files first.",
         "rename_no_target_title": "No target vehicle",
         "rename_no_target_body": "Pick a preset as the target vehicle first.",
         "rename_no_dest_title": "No destination folder",
         "rename_no_dest_body": "Choose a valid destination folder first.",
-        "rename_same_file": "'{name}' skipped — source and destination are the same file.",
+        "rename_same_file": "'{name}' skipped, source and destination are the same file.",
         "rename_copied": "'{old}' → '{new}'",
         "rename_copied_els": "'{old}' → '{new}' (ELS folder)",
         "rename_copy_failed": "Could not copy '{name}': {err}",
-        "rename_els_fallback": "ELS folder not available (GTA path missing) — XML files are copied to the destination folder.",
+        "rename_els_fallback": "ELS folder not available (GTA path missing), XML files are copied to the destination folder.",
         "rename_done_summary_els": "{n} file(s) copied, {els} of them to the ELS folder",
         "rename_preset_editor_new_title": "New preset",
         "rename_preset_editor_edit_title": "Edit preset",
@@ -443,14 +445,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tab_install": "Installieren",
         "tab_mods": "DLC-Packs",
         "tab_settings": "Einstellungen",
-        "history_restored": "— vorherige Sitzung —",
+        "history_restored": "vorherige Sitzung",
         "update_available_title": "Update verfügbar",
         "update_available_body": "AddonV {version} ist verfügbar (installiert: {current}).\n\nJetzt herunterladen und installieren?",
         "update_install_btn": "Jetzt installieren",
         "update_later_btn": "Später",
         "update_never_btn": "Nicht mehr anzeigen",
         "update_none": "Du hast bereits die neueste Version ({current}).",
-        "update_check_failed": "Suche nach Updates fehlgeschlagen — bitte Internetverbindung prüfen.",
+        "update_check_failed": "Suche nach Updates fehlgeschlagen, bitte Internetverbindung prüfen.",
         "update_downloading": "Update wird heruntergeladen…",
         "update_download_failed": "Download fehlgeschlagen: {err}",
         "update_available_log": "Update verfügbar: Version {version}.",
@@ -484,9 +486,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlclist_entry_removed": "dlclist.xml: Eintrag für '{name}' entfernt.",
         "dlclist_disabled": "dlclist.xml: '{name}' deaktiviert (auskommentiert).",
         "dlclist_enabled": "dlclist.xml: '{name}' aktiviert.",
-        "dlclist_duplicate": "dlclist.xml: '{name}' ist mehrfach eingetragen — Duplikat entfernen.",
+        "dlclist_duplicate": "dlclist.xml: '{name}' ist mehrfach eingetragen, Duplikat entfernen.",
 
-        "repair_none": "dlclist.xml: nichts zu reparieren — Liste passt zu den installierten Packs.",
+        "repair_none": "dlclist.xml: nichts zu reparieren, Liste passt zu den installierten Packs.",
         "repair_added": "dlclist.xml: fehlenden Eintrag für '{name}' wieder hinzugefügt.",
         "repair_removed": "dlclist.xml: Eintrag für fehlendes '{name}' entfernt.",
         "repair_missing_title": "Ordner fehlt",
@@ -498,10 +500,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "choose_gta_btn": "GTA-Pfad wählen…",
         "gta_path_label": "GTA-Pfad:  {path}",
-        "gta_path_unset": "GTA-Pfad:  (nicht gesetzt — bitte wählen)",
+        "gta_path_unset": "GTA-Pfad:  (nicht gesetzt, bitte wählen)",
         "mods_checkbox": "In /mods-Unterordner installieren (empfohlen, lässt Originaldateien unberührt)",
         "mode_safe": "Modus: sicher (mods/)",
-        "mode_direct": "Modus: DIREKT — Originaldateien werden verändert!",
+        "mode_direct": "Modus: DIREKT, Originaldateien werden verändert!",
 
         "drop_zone_title": "Mods hier ablegen",
         "drop_zone_hint": (
@@ -511,7 +513,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "DLC → mods/update/x64/dlcpacks (+ dlclist.xml) · ELS → ELS/pack_default."
         ),
         "drop_unknown": (
-            "Konnte '{name}' nicht zuordnen — bitte einen DLC-Ordner "
+            "Konnte '{name}' nicht zuordnen, bitte einen DLC-Ordner "
             "(mit dlc.rpf) oder ELS-VCF .xml-Datei(en) ablegen."
         ),
 
@@ -519,7 +521,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "archive_extracted": "'{name}' entpackt.",
         "archive_failed": "'{name}' konnte nicht entpackt werden: {err}",
         "archive_corrupt": (
-            "'{name}' scheint beschädigt oder unvollständig zu sein — "
+            "'{name}' scheint beschädigt oder unvollständig zu sein, "
             "bitte erneut herunterladen."
         ),
         "archive_unsupported": (
@@ -531,13 +533,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlclist_btn": "dlclist.xml wählen…",
         "dlclist_clear_btn": "zurücksetzen",
         "dlclist_label": "dlclist.xml:  {path}",
-        "dlclist_unset": "dlclist.xml:  (optional — extrahierte Datei für automatische Bearbeitung)",
+        "dlclist_unset": "dlclist.xml:  (optional, extrahierte Datei für automatische Bearbeitung)",
 
         "gta_detected": "GTA automatisch erkannt: {path}",
-        "gta_not_detected": "Hinweis: GTA-Pfad nicht automatisch erkannt — bitte oben wählen.",
+        "gta_not_detected": "Hinweis: GTA-Pfad nicht automatisch erkannt, bitte oben wählen.",
         "gta_path_set": "GTA-Pfad gesetzt: {path}",
         "dlclist_set": "dlclist.xml gesetzt: {path}",
-        "direct_enabled": "Direktinstallation aktiviert — Originaldateien werden verändert.",
+        "direct_enabled": "Direktinstallation aktiviert, Originaldateien werden verändert.",
         "safe_enabled": "Sichere Installation aktiviert (mods/-Unterordner).",
         "dlclist_added": "dlclist.xml: Eintrag für '{name}' hinzugefügt.",
         "dlclist_existed": "dlclist.xml: Eintrag für '{name}' war bereits vorhanden.",
@@ -554,7 +556,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "invalid_folder_body": "Dieser Ordner enthält keine GTA5.exe / GTAVLauncher.exe.",
         "choose_gta_dialog": "GTA-Installationsordner wählen",
         "choose_dlclist_dialog": "extrahierte dlclist.xml wählen",
-        "direct_warning_title": "Direktinstallation – Achtung!",
+        "direct_warning_title": "Direktinstallation, Achtung!",
         "direct_warning_body": (
             "Du bist dabei, Mods direkt in den GTA-Hauptordner zu installieren.\n\n"
             "Risiken:\n"
@@ -580,7 +582,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_no_xmls": "Keine ELS-VCF-XML-Dateien gefunden.",
         "els_copy_failed": "ELS '{name}' konnte nicht installiert werden: {err}",
         "els_copy_failed_partial": "Nach {copied} Datei(en) abgebrochen: '{name}' konnte nicht kopiert werden: {err}",
-        "els_summary": "ELS — {copied} Datei(en) installiert, {skipped} behalten.",
+        "els_summary": "ELS, {copied} Datei(en) installiert, {skipped} behalten.",
 
         "els_pick_title": "ELS-Variante wählen",
         "els_pick_hint": (
@@ -590,20 +592,20 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_pick_count": "{n} Datei(en)",
         "els_pick_recommended": "★ am nächsten zum Pack",
         "els_pick_root": "(oberste Ebene)",
-        "els_variant_chosen": "ELS — installiere Variante aus '{folder}'.",
-        "els_variant_skipped": "ELS — Variantenauswahl abgebrochen, übersprungen.",
+        "els_variant_chosen": "ELS, installiere Variante aus '{folder}'.",
+        "els_variant_skipped": "ELS, Variantenauswahl abgebrochen, übersprungen.",
 
         "drop_nothing": "Nichts Verwertbares abgelegt (nur Dateien und Ordner werden unterstützt).",
         "unexpected_error": "Unerwarteter Fehler: {err}",
 
         "replace_title": "Ersetzen?",
         "dlc_replace_body": "DLC '{name}' existiert bereits.\n\nVorhandene Version ersetzen?",
-        "dlc_kept": "DLC '{name}' beibehalten — nicht ersetzt.",
+        "dlc_kept": "DLC '{name}' beibehalten, nicht ersetzt.",
         "els_replace_body": "ELS '{name}' existiert bereits im Zielordner.\n\nVorhandene Datei(en) ersetzen?",
-        "els_kept": "ELS '{name}' beibehalten — nicht ersetzt.",
+        "els_kept": "ELS '{name}' beibehalten, nicht ersetzt.",
 
         "tab_els": "ELS",
-        "els_subtitle": "{groups} Ordner · {files} Datei(en) — nach Installationszeit gruppiert",
+        "els_subtitle": "{groups} Ordner · {files} Datei(en), nach Installationszeit gruppiert",
         "els_subtitle_one": "1 Ordner",
         "els_subtitle_many": "{n} Ordner",
         "subtitle_placeholder": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr.",
@@ -617,16 +619,18 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_file_removed": "ELS-Datei '{name}' entfernt.",
         "els_remove_failed": "'{name}' konnte nicht entfernt werden: {err}",
 
-        "dlclist_paths_close_missing": "`</Paths>` in dlclist.xml nicht gefunden — Datei kaputt?",
+        "dlclist_paths_close_missing": "`</Paths>` in dlclist.xml nicht gefunden, Datei kaputt?",
 
         "connected": "Verbunden",
         "nav_menu": "Menü",
         "safebox_title": "Sichere Installation",
         "unsafe_title": "Unsichere Installation",
-        "safebox_desc": "Schreibt nur in mods/ — Originale bleiben unberührt.",
-        "install_subtitle": "Archive ablegen — AddonV entpackt, erkennt & installiert DLC-, ELS- & XML-Inhalte automatisch.",
+        "safebox_desc": "Schreibt nur in mods/, Originale bleiben unberührt.",
+        "install_subtitle": "Archive ablegen, AddonV entpackt, erkennt & installiert DLC-, ELS- & XML-Inhalte automatisch.",
         "drop_headline": "Archive hierher ziehen",
-        "drop_formats": ".zip · .rar · .7z · .oiv — oder Ordner",
+        "drop_formats": ".zip · .rar · .7z · .oiv, oder Ordner",
+        "install_log_title": "Protokoll",
+        "log_autoscroll": "Autoscroll",
         "choose_files_btn": "Dateien auswählen",
         "metric_packs_active": "Packs aktiv",
         "metric_els_sets": "ELS-Sets",
@@ -645,7 +649,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "sort_added": "Hinzugefügt",
         "reread_btn": "Neu lesen",
         "add_btn": "Hinzufügen",
-        "col_name": "Pack-Name",
+        "col_name": "Packname",
         "col_created": "Ordner erstellt",
         "col_added": "Hinzugefügt",
         "col_status": "Status",
@@ -676,7 +680,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "choose_archives_dialog": "Archive auswählen",
 
         "tab_profiles": "Profile",
-        "profiles_subtitle": "{count} gespeicherte(s) Setup(s) — DLC & ELS mit einem Klick umschalten.",
+        "profiles_subtitle": "{count} gespeicherte(s) Setup(s), DLC & ELS mit einem Klick umschalten.",
         "profiles_empty": "Noch keine Profile. Speichere dein aktuelles Setup als Profil.",
         "profiles_new_btn": "Neues Profil",
         "profile_count": "{dlc} DLC · {els} ELS",
@@ -693,14 +697,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_editor_empty": "Nichts installiert.",
         "profile_no_path": "Zuerst den GTA-Pfad festlegen (Tab „Installieren“), um Profile zu nutzen.",
         "profile_delete_title": "Profil löschen?",
-        "profile_delete_body": "Das Profil '{name}' löschen?\n\nDeine installierten Mods bleiben unangetastet — nur das gespeicherte Setup wird entfernt.",
+        "profile_delete_body": "Das Profil '{name}' löschen?\n\nDeine installierten Mods bleiben unangetastet, nur das gespeicherte Setup wird entfernt.",
         "profile_created": "Profil '{name}' erstellt.",
         "profile_saved": "Profil '{name}' aktualisiert.",
         "profile_deleted": "Profil '{name}' gelöscht.",
         "profile_activated": "Profil '{name}' aktiviert.",
         "profile_deactivated": "Profil '{name}' deaktiviert.",
-        "profile_els_stashed": "ELS — {n} Datei(en) nach '{name} unused' verschoben.",
-        "profile_els_restored": "ELS — {n} Datei(en) aus '{name} unused' zurückgeholt.",
+        "profile_els_stashed": "ELS, {n} Datei(en) nach '{name} unused' verschoben.",
+        "profile_els_restored": "ELS, {n} Datei(en) aus '{name} unused' zurückgeholt.",
         "profile_dlc_commented": "dlclist.xml: DLC von Profil '{name}' auskommentiert.",
         "profile_dlc_uncommented": "dlclist.xml: DLC von Profil '{name}' wieder aktiviert.",
 
@@ -717,7 +721,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zone_edit": "Bearbeiten",
         "zone_remove": "Entfernen",
         "section_zones": "Drop-Zonen",
-        "zones_settings_desc": "Teile die Drop-Fläche in bis zu 4 Ziele auf — auf eine Zone gezogene Dateien werden direkt in ihren Ordner kopiert.",
+        "zones_settings_desc": "Teile die Drop-Fläche in bis zu 4 Ziele auf, auf eine Zone gezogene Dateien werden direkt in ihren Ordner kopiert.",
         "zone_editor_new_title": "Neue Drop-Zone",
         "zone_editor_edit_title": "Drop-Zone bearbeiten",
         "zone_name_placeholder": "Name, z. B. Scripts",
@@ -755,25 +759,25 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zone_copy_failed": "'{name}' konnte nicht kopiert werden: {err}",
         "zone_exists": "'{name}' existiert bereits im Zielordner.",
         "zone_replace_body": "'{name}' existiert bereits im Zielordner.\n\nErsetzen?",
-        "zone_kept": "'{name}' beibehalten — nicht ersetzt.",
+        "zone_kept": "'{name}' beibehalten, nicht ersetzt.",
         "zone_summary": "{n} Element(e) → {name}",
         "zone_nothing": "Nichts Verwertbares auf diese Zone gezogen.",
-        "zone_overlap": "Zonen dürfen sich nicht überlappen — freie Zellen wählen.",
+        "zone_overlap": "Zonen dürfen sich nicht überlappen, freie Zellen wählen.",
 
         "tab_rename": "Dateien-Umbenenner",
-        "rename_subtitle": "Benenne das Datei-Set eines Replace-Fahrzeugs auf ein anderes Spiel-Modell um — als Kopie, Originale bleiben unberührt.",
-        "rename_drop_headline": "Fahrzeug-Dateien hierher ziehen",
-        "rename_drop_formats": ".yft · .ytd · .xml — Dateien oder Ordner",
+        "rename_subtitle": "Benenne das Datei-Set eines Replace-Fahrzeugs auf ein anderes Spiel-Modell um, als Kopie, Originale bleiben unberührt.",
+        "rename_drop_headline": "Fahrzeugdateien hierher ziehen",
+        "rename_drop_formats": ".yft · .ytd · .xml, Dateien oder Ordner",
         "rename_choose_files_dialog": "Fahrzeug-Dateien auswählen",
         "rename_detected_eyebrow": "Erkanntes Fahrzeug",
         "rename_none_short": "nichts erkannt",
         "rename_files_count": "{n} Datei(en)",
-        "rename_multi_hint": "Mehrere Sets erkannt — wähle das richtige:",
+        "rename_multi_hint": "Mehrere Sets erkannt, wähle das richtige:",
         "rename_skipped_note": "{n} Datei(en) werden ignoriert (anderes Set oder fremdes Format).",
         "rename_preview_label": "Vorschau",
         "rename_preview_empty": "Dateien ablegen und Ziel wählen, um die Vorschau zu sehen.",
         "rename_preview_no_target": "Ziel wählen…",
-        "rename_target_label": "Ziel-Fahrzeug",
+        "rename_target_label": "Zielfahrzeug",
         "rename_preset_new_btn": "Neues Preset",
         "rename_dest_eyebrow": "Zielordner",
         "rename_dest_choose_dialog": "Zielordner für die umbenannten Kopien wählen",
@@ -785,18 +789,18 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "rename_running": "Kopiere Dateien…",
         "rename_done_summary": "{n} Datei(en) kopiert",
         "rename_detected": "Fahrzeug erkannt: '{base}' ({n} Datei(en)).",
-        "rename_multi_log": "{n} verschiedene Sets erkannt — bitte eines auswählen.",
+        "rename_multi_log": "{n} verschiedene Sets erkannt, bitte eines auswählen.",
         "rename_no_files_title": "Keine Dateien",
         "rename_no_files_body": "Bitte zuerst die Fahrzeug-Dateien ablegen oder auswählen.",
         "rename_no_target_title": "Kein Ziel-Fahrzeug",
         "rename_no_target_body": "Bitte zuerst ein Preset als Ziel-Fahrzeug wählen.",
         "rename_no_dest_title": "Kein Zielordner",
         "rename_no_dest_body": "Bitte zuerst einen gültigen Zielordner wählen.",
-        "rename_same_file": "'{name}' übersprungen — Quelle und Ziel sind dieselbe Datei.",
+        "rename_same_file": "'{name}' übersprungen, Quelle und Ziel sind dieselbe Datei.",
         "rename_copied": "'{old}' → '{new}'",
         "rename_copied_els": "'{old}' → '{new}' (ELS-Ordner)",
         "rename_copy_failed": "'{name}' konnte nicht kopiert werden: {err}",
-        "rename_els_fallback": "ELS-Ordner nicht verfügbar (GTA-Pfad fehlt) — XML-Dateien werden in den Zielordner kopiert.",
+        "rename_els_fallback": "ELS-Ordner nicht verfügbar (GTA-Pfad fehlt), XML-Dateien werden in den Zielordner kopiert.",
         "rename_done_summary_els": "{n} Datei(en) kopiert, davon {els} in den ELS-Ordner",
         "rename_preset_editor_new_title": "Neues Preset",
         "rename_preset_editor_edit_title": "Preset bearbeiten",
@@ -831,14 +835,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tab_install": "Установка",
         "tab_mods": "DLC-паки",
         "tab_settings": "Настройки",
-        "history_restored": "— предыдущий сеанс —",
+        "history_restored": "предыдущий сеанс",
         "update_available_title": "Доступно обновление",
         "update_available_body": "Доступна версия AddonV {version} (у вас {current}).\n\nСкачать и установить сейчас?",
         "update_install_btn": "Установить сейчас",
         "update_later_btn": "Позже",
         "update_never_btn": "Больше не показывать",
         "update_none": "У вас уже последняя версия ({current}).",
-        "update_check_failed": "Не удалось проверить обновления — проверьте подключение к интернету.",
+        "update_check_failed": "Не удалось проверить обновления, проверьте подключение к интернету.",
         "update_downloading": "Загрузка обновления…",
         "update_download_failed": "Не удалось загрузить: {err}",
         "update_available_log": "Доступно обновление: версия {version}.",
@@ -872,9 +876,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlclist_entry_removed": "dlclist.xml: запись для '{name}' удалена.",
         "dlclist_disabled": "dlclist.xml: '{name}' отключён (закомментирован).",
         "dlclist_enabled": "dlclist.xml: '{name}' включён.",
-        "dlclist_duplicate": "dlclist.xml: '{name}' указан несколько раз — удалите дубликат.",
+        "dlclist_duplicate": "dlclist.xml: '{name}' указан несколько раз, удалите дубликат.",
 
-        "repair_none": "dlclist.xml: исправлять нечего — список соответствует установленным пакам.",
+        "repair_none": "dlclist.xml: исправлять нечего, список соответствует установленным пакам.",
         "repair_added": "dlclist.xml: восстановлена отсутствующая запись для '{name}'.",
         "repair_removed": "dlclist.xml: удалена запись для отсутствующего '{name}'.",
         "repair_missing_title": "Папка отсутствует",
@@ -886,10 +890,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "choose_gta_btn": "Выбрать путь к GTA…",
         "gta_path_label": "Путь к GTA:  {path}",
-        "gta_path_unset": "Путь к GTA:  (не задан — выберите)",
-        "mods_checkbox": "Устанавливать в подпапку /mods (рекомендуется — оригинальные файлы не трогаются)",
+        "gta_path_unset": "Путь к GTA:  (не задан, выберите)",
+        "mods_checkbox": "Устанавливать в подпапку /mods (рекомендуется, оригинальные файлы не трогаются)",
         "mode_safe": "Режим: безопасный (mods/)",
-        "mode_direct": "Режим: ПРЯМОЙ — оригинальные файлы будут изменены!",
+        "mode_direct": "Режим: ПРЯМОЙ, оригинальные файлы будут изменены!",
 
         "drop_zone_title": "Перетащите моды сюда",
         "drop_zone_hint": (
@@ -899,7 +903,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "DLC → mods/update/x64/dlcpacks (+ dlclist.xml) · ELS → ELS/pack_default."
         ),
         "drop_unknown": (
-            "Не удалось определить, что такое '{name}' — перетащите папку DLC "
+            "Не удалось определить, что такое '{name}', перетащите папку DLC "
             "(с dlc.rpf) или ELS-VCF .xml-файл(ы)."
         ),
 
@@ -907,7 +911,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "archive_extracted": "'{name}' распаковано.",
         "archive_failed": "Не удалось распаковать '{name}': {err}",
         "archive_corrupt": (
-            "'{name}' повреждён или неполный — попробуйте скачать заново."
+            "'{name}' повреждён или неполный, попробуйте скачать заново."
         ),
         "archive_unsupported": (
             "Не удаётся открыть '{name}': для архивов {fmt} нужен 7-Zip. "
@@ -917,13 +921,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlclist_btn": "Выбрать dlclist.xml…",
         "dlclist_clear_btn": "сбросить",
         "dlclist_label": "dlclist.xml:  {path}",
-        "dlclist_unset": "dlclist.xml:  (необязательно — извлечённый файл для автоматической правки)",
+        "dlclist_unset": "dlclist.xml:  (необязательно, извлечённый файл для автоматической правки)",
 
         "gta_detected": "GTA найдена автоматически: {path}",
-        "gta_not_detected": "Примечание: путь к GTA не определён автоматически — выберите выше.",
+        "gta_not_detected": "Примечание: путь к GTA не определён автоматически, выберите выше.",
         "gta_path_set": "Путь к GTA задан: {path}",
         "dlclist_set": "dlclist.xml задан: {path}",
-        "direct_enabled": "Прямая установка включена — оригинальные файлы будут изменены.",
+        "direct_enabled": "Прямая установка включена, оригинальные файлы будут изменены.",
         "safe_enabled": "Безопасная установка включена (подпапка mods/).",
         "dlclist_added": "dlclist.xml: запись для '{name}' добавлена.",
         "dlclist_existed": "dlclist.xml: запись для '{name}' уже существует.",
@@ -940,7 +944,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "invalid_folder_body": "В этой папке нет GTA5.exe / GTAVLauncher.exe.",
         "choose_gta_dialog": "Выберите папку установки GTA",
         "choose_dlclist_dialog": "Выберите извлечённый dlclist.xml",
-        "direct_warning_title": "Прямая установка – внимание!",
+        "direct_warning_title": "Прямая установка, внимание!",
         "direct_warning_body": (
             "Вы собираетесь установить моды прямо в основную папку GTA.\n\n"
             "Риски:\n"
@@ -966,7 +970,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_no_xmls": "ELS-VCF XML-файлы не найдены.",
         "els_copy_failed": "Не удалось установить ELS '{name}': {err}",
         "els_copy_failed_partial": "Остановлено после {copied} файл(ов): не удалось скопировать '{name}': {err}",
-        "els_summary": "ELS — установлено файлов: {copied}, сохранено: {skipped}.",
+        "els_summary": "ELS, установлено файлов: {copied}, сохранено: {skipped}.",
 
         "els_pick_title": "Выбор варианта ELS",
         "els_pick_hint": (
@@ -976,20 +980,20 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_pick_count": "файлов: {n}",
         "els_pick_recommended": "★ ближе всего к паку",
         "els_pick_root": "(верхний уровень)",
-        "els_variant_chosen": "ELS — устанавливаю вариант из '{folder}'.",
-        "els_variant_skipped": "ELS — выбор варианта отменён, пропущено.",
+        "els_variant_chosen": "ELS, устанавливаю вариант из '{folder}'.",
+        "els_variant_skipped": "ELS, выбор варианта отменён, пропущено.",
 
         "drop_nothing": "Не перетащено ничего подходящего (поддерживаются только файлы и папки).",
         "unexpected_error": "Непредвиденная ошибка: {err}",
 
         "replace_title": "Заменить?",
         "dlc_replace_body": "DLC '{name}' уже существует.\n\nЗаменить существующую версию?",
-        "dlc_kept": "DLC '{name}' сохранён — не заменён.",
+        "dlc_kept": "DLC '{name}' сохранён, не заменён.",
         "els_replace_body": "ELS '{name}' уже существует в целевой папке.\n\nЗаменить существующий файл(ы)?",
-        "els_kept": "ELS '{name}' сохранён — не заменён.",
+        "els_kept": "ELS '{name}' сохранён, не заменён.",
 
         "tab_els": "ELS",
-        "els_subtitle": "{groups} папк(и) · {files} файл(ов) — сгруппировано по времени установки",
+        "els_subtitle": "{groups} папк(и) · {files} файл(ов), сгруппировано по времени установки",
         "els_group_title": "Установлено {date}",
         "els_group_count": "{n} файл(ов)",
         "els_delete_group": "Удалить папку",
@@ -1000,16 +1004,18 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_file_removed": "ELS-файл '{name}' удалён.",
         "els_remove_failed": "Не удалось удалить '{name}': {err}",
 
-        "dlclist_paths_close_missing": "`</Paths>` не найден в dlclist.xml — файл повреждён?",
+        "dlclist_paths_close_missing": "`</Paths>` не найден в dlclist.xml, файл повреждён?",
 
         "connected": "Подключено",
         "nav_menu": "Меню",
         "safebox_title": "Безопасная установка",
         "unsafe_title": "Небезопасная установка",
-        "safebox_desc": "Пишет только в mods/ — оригиналы не трогаются.",
-        "install_subtitle": "Перетащите архивы — AddonV распакует, определит и установит DLC, ELS и XML автоматически.",
+        "safebox_desc": "Пишет только в mods/, оригиналы не трогаются.",
+        "install_subtitle": "Перетащите архивы, AddonV распакует, определит и установит DLC, ELS и XML автоматически.",
         "drop_headline": "Перетащите архивы сюда",
-        "drop_formats": ".zip · .rar · .7z · .oiv — или папка",
+        "drop_formats": ".zip · .rar · .7z · .oiv, или папка",
+        "install_log_title": "Журнал",
+        "log_autoscroll": "Автопрокрутка",
         "choose_files_btn": "Выбрать файлы",
         "metric_packs_active": "Паков активно",
         "metric_els_sets": "ELS-наборы",
@@ -1055,7 +1061,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "choose_archives_dialog": "Выберите архивы",
 
         "tab_profiles": "Профили",
-        "profiles_subtitle": "{count} сохранённый(ых) набор(ов) — переключай DLC и ELS одним кликом.",
+        "profiles_subtitle": "{count} сохранённый(ых) набор(ов), переключай DLC и ELS одним кликом.",
         "profiles_empty": "Профилей пока нет. Сохрани текущую конфигурацию как профиль.",
         "profiles_new_btn": "Новый профиль",
         "profile_count": "{dlc} DLC · {els} ELS",
@@ -1071,14 +1077,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_editor_empty": "Ничего не установлено.",
         "profile_no_path": "Сначала укажите путь к GTA (вкладка «Установка»), чтобы использовать профили.",
         "profile_delete_title": "Удалить профиль?",
-        "profile_delete_body": "Удалить профиль '{name}'?\n\nУстановленные моды останутся нетронутыми — удалится только сохранённый набор.",
+        "profile_delete_body": "Удалить профиль '{name}'?\n\nУстановленные моды останутся нетронутыми, удалится только сохранённый набор.",
         "profile_created": "Профиль '{name}' создан.",
         "profile_saved": "Профиль '{name}' обновлён.",
         "profile_deleted": "Профиль '{name}' удалён.",
         "profile_activated": "Профиль '{name}' активирован.",
         "profile_deactivated": "Профиль '{name}' деактивирован.",
-        "profile_els_stashed": "ELS — перемещено в '{name} unused' файлов: {n}.",
-        "profile_els_restored": "ELS — возвращено из '{name} unused' файлов: {n}.",
+        "profile_els_stashed": "ELS, перемещено в '{name} unused' файлов: {n}.",
+        "profile_els_restored": "ELS, возвращено из '{name} unused' файлов: {n}.",
         "profile_dlc_commented": "dlclist.xml: DLC профиля '{name}' закомментированы.",
         "profile_dlc_uncommented": "dlclist.xml: DLC профиля '{name}' снова включены.",
 
@@ -1095,7 +1101,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zone_edit": "Изменить",
         "zone_remove": "Удалить",
         "section_zones": "Зоны перетаскивания",
-        "zones_settings_desc": "Разделите область на 4 цели — файлы, брошенные в зону, копируются прямо в её папку.",
+        "zones_settings_desc": "Разделите область на 4 цели, файлы, брошенные в зону, копируются прямо в её папку.",
         "zone_editor_new_title": "Новая зона",
         "zone_editor_edit_title": "Изменить зону",
         "zone_name_placeholder": "Название, напр. Scripts",
@@ -1123,10 +1129,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zone_copy_failed": "Не удалось скопировать '{name}': {err}",
         "zone_exists": "'{name}' уже существует в целевой папке.",
         "zone_replace_body": "'{name}' уже существует в целевой папке.\n\nЗаменить?",
-        "zone_kept": "'{name}' сохранено — не заменено.",
+        "zone_kept": "'{name}' сохранено, не заменено.",
         "zone_summary": "{n} элемент(ов) → {name}",
         "zone_nothing": "На эту зону не перетащено ничего подходящего.",
-        "zone_overlap": "Зоны не должны пересекаться — выберите свободные ячейки.",
+        "zone_overlap": "Зоны не должны пересекаться, выберите свободные ячейки.",
     },
 
     "es": {
@@ -1153,14 +1159,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tab_install": "Instalar",
         "tab_mods": "Packs DLC",
         "tab_settings": "Ajustes",
-        "history_restored": "— sesión anterior —",
+        "history_restored": "sesión anterior",
         "update_available_title": "Actualización disponible",
         "update_available_body": "AddonV {version} está disponible (tienes {current}).\n\n¿Descargar e instalar ahora?",
         "update_install_btn": "Instalar ahora",
         "update_later_btn": "Más tarde",
         "update_never_btn": "No mostrar de nuevo",
         "update_none": "Ya tienes la última versión ({current}).",
-        "update_check_failed": "No se pudo buscar actualizaciones — comprueba tu conexión a internet.",
+        "update_check_failed": "No se pudo buscar actualizaciones, comprueba tu conexión a internet.",
         "update_downloading": "Descargando actualización…",
         "update_download_failed": "Error al descargar: {err}",
         "update_available_log": "Actualización disponible: versión {version}.",
@@ -1194,9 +1200,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlclist_entry_removed": "dlclist.xml: entrada para '{name}' eliminada.",
         "dlclist_disabled": "dlclist.xml: '{name}' desactivado (comentado).",
         "dlclist_enabled": "dlclist.xml: '{name}' activado.",
-        "dlclist_duplicate": "dlclist.xml: '{name}' aparece más de una vez — elimina el duplicado.",
+        "dlclist_duplicate": "dlclist.xml: '{name}' aparece más de una vez, elimina el duplicado.",
 
-        "repair_none": "dlclist.xml: nada que reparar — la lista coincide con los packs instalados.",
+        "repair_none": "dlclist.xml: nada que reparar, la lista coincide con los packs instalados.",
         "repair_added": "dlclist.xml: entrada para '{name}' restaurada.",
         "repair_removed": "dlclist.xml: entrada del '{name}' faltante eliminada.",
         "repair_missing_title": "Falta la carpeta",
@@ -1208,10 +1214,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         "choose_gta_btn": "Elegir ruta de GTA…",
         "gta_path_label": "Ruta de GTA:  {path}",
-        "gta_path_unset": "Ruta de GTA:  (no establecida — elige una)",
-        "mods_checkbox": "Instalar en la subcarpeta /mods (recomendado — no toca los archivos originales)",
+        "gta_path_unset": "Ruta de GTA:  (no establecida, elige una)",
+        "mods_checkbox": "Instalar en la subcarpeta /mods (recomendado, no toca los archivos originales)",
         "mode_safe": "Modo: seguro (mods/)",
-        "mode_direct": "Modo: DIRECTO — ¡los archivos originales serán modificados!",
+        "mode_direct": "Modo: DIRECTO, ¡los archivos originales serán modificados!",
 
         "drop_zone_title": "Suelta los mods aquí",
         "drop_zone_hint": (
@@ -1221,7 +1227,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "DLC → mods/update/x64/dlcpacks (+ dlclist.xml) · ELS → ELS/pack_default."
         ),
         "drop_unknown": (
-            "No se pudo identificar '{name}' — arrastra una carpeta DLC "
+            "No se pudo identificar '{name}', arrastra una carpeta DLC "
             "(con dlc.rpf) o archivo(s) ELS-VCF .xml."
         ),
 
@@ -1229,7 +1235,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "archive_extracted": "'{name}' extraído.",
         "archive_failed": "No se pudo extraer '{name}': {err}",
         "archive_corrupt": (
-            "'{name}' parece dañado o incompleto — intenta descargarlo de nuevo."
+            "'{name}' parece dañado o incompleto, intenta descargarlo de nuevo."
         ),
         "archive_unsupported": (
             "No se puede abrir '{name}': los archivos {fmt} necesitan 7-Zip. "
@@ -1239,13 +1245,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlclist_btn": "Elegir dlclist.xml…",
         "dlclist_clear_btn": "restablecer",
         "dlclist_label": "dlclist.xml:  {path}",
-        "dlclist_unset": "dlclist.xml:  (opcional — archivo extraído para edición automática)",
+        "dlclist_unset": "dlclist.xml:  (opcional, archivo extraído para edición automática)",
 
         "gta_detected": "GTA detectado automáticamente: {path}",
-        "gta_not_detected": "Aviso: la ruta de GTA no se detectó automáticamente — elige arriba.",
+        "gta_not_detected": "Aviso: la ruta de GTA no se detectó automáticamente, elige arriba.",
         "gta_path_set": "Ruta de GTA establecida: {path}",
         "dlclist_set": "dlclist.xml establecido: {path}",
-        "direct_enabled": "Instalación directa activada — los archivos originales serán modificados.",
+        "direct_enabled": "Instalación directa activada, los archivos originales serán modificados.",
         "safe_enabled": "Instalación segura activada (subcarpeta mods/).",
         "dlclist_added": "dlclist.xml: entrada para '{name}' añadida.",
         "dlclist_existed": "dlclist.xml: la entrada para '{name}' ya existía.",
@@ -1262,7 +1268,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "invalid_folder_body": "Esta carpeta no contiene GTA5.exe / GTAVLauncher.exe.",
         "choose_gta_dialog": "Elegir carpeta de instalación de GTA",
         "choose_dlclist_dialog": "Elegir dlclist.xml extraído",
-        "direct_warning_title": "Instalación directa – ¡Atención!",
+        "direct_warning_title": "Instalación directa, ¡Atención!",
         "direct_warning_body": (
             "Estás a punto de instalar mods directamente en la carpeta principal de GTA.\n\n"
             "Riesgos:\n"
@@ -1288,7 +1294,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_no_xmls": "No se encontraron archivos XML ELS-VCF.",
         "els_copy_failed": "No se pudo instalar ELS '{name}': {err}",
         "els_copy_failed_partial": "Detenido tras {copied} archivo(s): no se pudo copiar '{name}': {err}",
-        "els_summary": "ELS — {copied} archivo(s) instalados, {skipped} conservados.",
+        "els_summary": "ELS, {copied} archivo(s) instalados, {skipped} conservados.",
 
         "els_pick_title": "Elegir variante ELS",
         "els_pick_hint": (
@@ -1298,20 +1304,20 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_pick_count": "{n} archivo(s)",
         "els_pick_recommended": "★ más cercana al pack",
         "els_pick_root": "(nivel superior)",
-        "els_variant_chosen": "ELS — instalando variante desde '{folder}'.",
-        "els_variant_skipped": "ELS — selección de variante cancelada, omitida.",
+        "els_variant_chosen": "ELS, instalando variante desde '{folder}'.",
+        "els_variant_skipped": "ELS, selección de variante cancelada, omitida.",
 
         "drop_nothing": "No se soltó nada utilizable (solo se admiten archivos y carpetas).",
         "unexpected_error": "Error inesperado: {err}",
 
         "replace_title": "¿Reemplazar?",
         "dlc_replace_body": "El DLC '{name}' ya existe.\n\n¿Reemplazar la versión existente?",
-        "dlc_kept": "DLC '{name}' conservado — no reemplazado.",
+        "dlc_kept": "DLC '{name}' conservado, no reemplazado.",
         "els_replace_body": "ELS '{name}' ya existe en la carpeta de destino.\n\n¿Reemplazar el/los archivo(s) existente(s)?",
-        "els_kept": "ELS '{name}' conservado — no reemplazado.",
+        "els_kept": "ELS '{name}' conservado, no reemplazado.",
 
         "tab_els": "ELS",
-        "els_subtitle": "{groups} carpeta(s) · {files} archivo(s) — agrupados por hora de instalación",
+        "els_subtitle": "{groups} carpeta(s) · {files} archivo(s), agrupados por hora de instalación",
         "els_group_title": "Instalado {date}",
         "els_group_count": "{n} archivo(s)",
         "els_delete_group": "Eliminar carpeta",
@@ -1322,16 +1328,18 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "els_file_removed": "Archivo ELS '{name}' eliminado.",
         "els_remove_failed": "No se pudo eliminar '{name}': {err}",
 
-        "dlclist_paths_close_missing": "`</Paths>` no encontrado en dlclist.xml — ¿archivo dañado?",
+        "dlclist_paths_close_missing": "`</Paths>` no encontrado en dlclist.xml, ¿archivo dañado?",
 
         "connected": "Conectado",
         "nav_menu": "Menú",
         "safebox_title": "Instalación segura",
         "unsafe_title": "Instalación insegura",
-        "safebox_desc": "Solo escribe en mods/ — los originales no se tocan.",
-        "install_subtitle": "Suelta archivos — AddonV extrae, detecta e instala contenido DLC, ELS y XML automáticamente.",
+        "safebox_desc": "Solo escribe en mods/, los originales no se tocan.",
+        "install_subtitle": "Suelta archivos, AddonV extrae, detecta e instala contenido DLC, ELS y XML automáticamente.",
         "drop_headline": "Arrastra archivos aquí",
-        "drop_formats": ".zip · .rar · .7z · .oiv — o carpeta",
+        "drop_formats": ".zip · .rar · .7z · .oiv, o carpeta",
+        "install_log_title": "Registro",
+        "log_autoscroll": "Autodesplazamiento",
         "choose_files_btn": "Elegir archivos",
         "metric_packs_active": "Packs activos",
         "metric_els_sets": "Sets ELS",
@@ -1377,7 +1385,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "choose_archives_dialog": "Elegir archivos comprimidos",
 
         "tab_profiles": "Perfiles",
-        "profiles_subtitle": "{count} configuración(es) guardada(s) — cambia tu setup de DLC y ELS con un clic.",
+        "profiles_subtitle": "{count} configuración(es) guardada(s), cambia tu setup de DLC y ELS con un clic.",
         "profiles_empty": "Aún no hay perfiles. Guarda tu configuración actual como perfil.",
         "profiles_new_btn": "Nuevo perfil",
         "profile_count": "{dlc} DLC · {els} ELS",
@@ -1393,14 +1401,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_editor_empty": "Nada instalado.",
         "profile_no_path": "Primero define la ruta de GTA (pestaña Instalar) para usar perfiles.",
         "profile_delete_title": "¿Eliminar perfil?",
-        "profile_delete_body": "¿Eliminar el perfil '{name}'?\n\nTus mods instalados quedan intactos — solo se elimina la configuración guardada.",
+        "profile_delete_body": "¿Eliminar el perfil '{name}'?\n\nTus mods instalados quedan intactos, solo se elimina la configuración guardada.",
         "profile_created": "Perfil '{name}' creado.",
         "profile_saved": "Perfil '{name}' actualizado.",
         "profile_deleted": "Perfil '{name}' eliminado.",
         "profile_activated": "Perfil '{name}' activado.",
         "profile_deactivated": "Perfil '{name}' desactivado.",
-        "profile_els_stashed": "ELS — {n} archivo(s) movidos a '{name} unused'.",
-        "profile_els_restored": "ELS — {n} archivo(s) restaurados desde '{name} unused'.",
+        "profile_els_stashed": "ELS, {n} archivo(s) movidos a '{name} unused'.",
+        "profile_els_restored": "ELS, {n} archivo(s) restaurados desde '{name} unused'.",
         "profile_dlc_commented": "dlclist.xml: DLC del perfil '{name}' comentados.",
         "profile_dlc_uncommented": "dlclist.xml: DLC del perfil '{name}' reactivados.",
 
@@ -1417,7 +1425,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zone_edit": "Editar",
         "zone_remove": "Eliminar",
         "section_zones": "Zonas de arrastre",
-        "zones_settings_desc": "Divide el área en hasta 4 destinos — los archivos soltados en una zona se copian directamente a su carpeta.",
+        "zones_settings_desc": "Divide el área en hasta 4 destinos, los archivos soltados en una zona se copian directamente a su carpeta.",
         "zone_editor_new_title": "Nueva zona",
         "zone_editor_edit_title": "Editar zona",
         "zone_name_placeholder": "Nombre, p. ej. Scripts",
@@ -1445,9 +1453,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zone_copy_failed": "No se pudo copiar '{name}': {err}",
         "zone_exists": "'{name}' ya existe en la carpeta destino.",
         "zone_replace_body": "'{name}' ya existe en la carpeta destino.\n\n¿Reemplazar?",
-        "zone_kept": "'{name}' conservado — no reemplazado.",
+        "zone_kept": "'{name}' conservado, no reemplazado.",
         "zone_summary": "{n} elemento(s) → {name}",
         "zone_nothing": "No se soltó nada utilizable en esta zona.",
-        "zone_overlap": "Las zonas no pueden solaparse — elige celdas libres.",
+        "zone_overlap": "Las zonas no pueden solaparse, elige celdas libres.",
     },
 }

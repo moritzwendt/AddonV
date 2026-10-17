@@ -700,7 +700,6 @@ ApplicationWindow {
             PageHeader {
                 Layout.fillWidth: true
                 title: root.ui("tab_install")
-                subtitle: root.ui("subtitle_placeholder")
             }
 
             RowLayout {
@@ -1931,9 +1930,7 @@ ApplicationWindow {
                 spacing: 12
                 PageHeader {
                     title: root.ui("tab_profiles")
-                    subtitle: backend.gtaPathValid
-                              ? root.ui("subtitle_placeholder")
-                              : root.ui("profile_no_path")
+                    subtitle: backend.gtaPathValid ? "" : root.ui("profile_no_path")
                 }
                 Item { Layout.fillWidth: true }
             }
@@ -2138,7 +2135,6 @@ ApplicationWindow {
             PageHeader {
                 Layout.fillWidth: true
                 title: root.ui("tab_rename")
-                subtitle: root.ui("subtitle_placeholder")
             }
 
             RowLayout {
@@ -2711,7 +2707,6 @@ ApplicationWindow {
                 PageHeader {
                     Layout.fillWidth: true
                     title: root.ui("tab_settings")
-                    subtitle: root.ui("subtitle_placeholder")
                 }
 
 

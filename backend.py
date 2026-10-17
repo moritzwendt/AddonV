@@ -84,6 +84,9 @@ class Backend(QObject):
         self._needs_language = False
         self._init_language()
         self._restore_history()
+        if self.config.broken_copy:
+            self._history.append(("INFO", "err", T(
+                "config_unreadable", name=Path(self.config.broken_copy).name)))
 
     def _init_language(self) -> None:
         saved = self.config.language

@@ -32,8 +32,9 @@ _ENV_KEYS = ("USERPROFILE", "HOME", "QT_QPA_PLATFORM")
 
 
 @contextmanager
-def sandboxed_backend(tmp: Path, **config_extra):
-    """yield (backend, gta_folder) with an isolated config and a fake GTA install"""
+def sandboxed_backend(tmp: Path, raw_config: str | None = None, **config_extra):
+    """yield (backend, gta_folder) with an isolated config and a fake GTA install.
+    raw_config replaces the config file's text (to test unreadable settings)."""
     saved = {k: os.environ.get(k) for k in _ENV_KEYS}
     home = tmp / "home"
     (home / ".addonv").mkdir(parents=True)
@@ -43,7 +44,8 @@ def sandboxed_backend(tmp: Path, **config_extra):
     cfg = {"language": "de", "auto_check_updates": False,
            "save_terminal_history": False, "gta_path": str(gta)}
     cfg.update(config_extra)
-    (home / ".addonv" / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+    text = json.dumps(cfg) if raw_config is None else raw_config
+    (home / ".addonv" / "config.json").write_text(text, encoding="utf-8")
 
     os.environ["USERPROFILE"] = os.environ["HOME"] = str(home)
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
@@ -183,6 +185,17 @@ def test_declining_the_direct_mode_warning_changes_nothing(tmp: Path):
         assert b.setUseModsFolder(False) is False
         assert b.property("useModsFolder") is True
         assert [p["name"] for p in b.property("packs")] == ["InModsFolder"]
+
+
+def test_unreadable_settings_are_kept_and_reported_in_the_log(tmp: Path):
+    broken = '{"gta_path": "F:\\\\Games", "profiles": [ {"id": '
+    with sandboxed_backend(tmp, raw_config=broken) as (b, gta):
+        saved = tmp / "home" / ".addonv" / "config.json.broken"
+        assert saved.read_text(encoding="utf-8") == broken
+        messages = [h["text"] for h in b.property("history")]
+        assert any("config.json.broken" in m for m in messages)
+        b.setSidebarCollapsed(True)  # a normal save must leave the kept copy alone
+        assert saved.read_text(encoding="utf-8") == broken
 
 
 if __name__ == "__main__":

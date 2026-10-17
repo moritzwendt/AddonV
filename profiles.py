@@ -57,6 +57,32 @@ def stash_els(
     return moved
 
 
+def rename_stash(els_root: Path, old_name: str, new_name: str) -> bool:
+    # the stash folder is named after the profile, so a renamed profile would
+    # never find its hidden files again; carry the folder over to the new name
+    src = unused_dir(els_root, old_name)
+    dest = unused_dir(els_root, new_name)
+    if src == dest or not src.is_dir():
+        return False
+    try:
+        if not dest.exists():
+            src.rename(dest)
+            return True
+        # new name already has a stash (names that sanitise alike): merge
+        dest.mkdir(parents=True, exist_ok=True)
+        for f in list(src.rglob("*")):
+            if not f.is_file():
+                continue
+            target = dest / f.name
+            if target.exists():
+                target.unlink()
+            shutil.move(str(f), str(target))
+        shutil.rmtree(src, ignore_errors=True)
+    except OSError:
+        return False
+    return True
+
+
 def restore_els(
     els_root: Path,
     profile_name: str,

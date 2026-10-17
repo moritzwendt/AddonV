@@ -823,6 +823,10 @@ class Backend(QObject):
         edit_id = str(edit_id)
         found = self._find_profile(edit_id) if edit_id else None
         if found is not None:
+            old_name = found.get("name", "")
+            paths = self._paths()
+            if paths is not None and old_name != name:
+                profiles.rename_stash(paths["els_root"], old_name, name)
             found["name"], found["dlc"], found["els"] = name, dlc, els
             found["color"] = color
             self._log("INFO", "ok", T("profile_saved", name=name))

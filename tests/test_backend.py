@@ -187,6 +187,111 @@ def test_declining_the_direct_mode_warning_changes_nothing(tmp: Path):
         assert [p["name"] for p in b.property("packs")] == ["InModsFolder"]
 
 
+def _pack_dir(gta: Path, name: str) -> Path:
+    d = gta / "mods" / "update" / "x64" / "dlcpacks" / name
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "dlc.rpf").write_text("x")
+    return d
+
+
+def test_mod_changes_are_ignored_while_an_action_is_running(tmp: Path):
+    xml = tmp / "dlclist.xml"
+    xml.write_text(DLCLIST, encoding="utf-8")
+    with sandboxed_backend(tmp, dlclist_xml_path=str(xml)) as (b, gta):
+        import dlclist
+        pack = _pack_dir(gta, "alpha")
+        b.saveProfile("Cops", [], [], "", "")
+        pid = _profile_ids(b)["Cops"]
+
+        b._set_busy(True)
+        b.toggleMod("alpha")
+        b.toggleMods(["alpha", "beta"])
+        b.removeMod("alpha")
+        b.removeMods(["alpha"])
+        b.setOrder(["beta", "alpha"])
+        b.toggleProfile(pid)
+        b.saveProfile("Renamed", [], [], "", pid)
+        b.deleteProfile(pid)
+        b.clearDlclist()
+        assert b.setUseModsFolder(False) is False
+
+        assert xml.read_text(encoding="utf-8") == DLCLIST
+        assert pack.is_dir()
+        assert b.property("activeProfile") == ""
+        assert _profile_ids(b) == {"Cops": pid}
+        assert b.property("useModsFolder") is True
+        assert b.property("dlclistPath") == str(xml)
+        notices = [h["text"] for h in b.property("history") if "Bitte warten" in h["text"]]
+        assert len(notices) == 1  # repeated clicks don't flood the log
+
+        b._set_busy(False)  # once the action is over, the same click works
+        b.toggleMod("alpha")
+        assert dlclist.list_disabled_entries(xml.read_text(encoding="utf-8")) == ["alpha"]
+
+
+def test_clicks_during_an_install_cannot_remove_or_switch_anything(tmp: Path):
+    with sandboxed_backend(tmp) as (b, gta):
+        backend_mod = sys.modules["backend"]
+        old_pack = _pack_dir(gta, "oldpack")
+        new_pack = tmp / "download" / "newpack"
+        new_pack.mkdir(parents=True)
+        (new_pack / "dlc.rpf").write_text("new")
+        b.saveProfile("Cops", [], [], "", "")
+        pid = _profile_ids(b)["Cops"]
+        b.reloadMods()
+
+        real_install = backend_mod.install_dlc
+        seen = {}
+
+        def install_with_clicks(*args, **kwargs):
+            # the user clicks around while the copy is running
+            seen["busy"] = b.property("busy")
+            b.removeMod("oldpack")
+            b.toggleProfile(pid)
+            b.setUseModsFolder(False)
+            return real_install(*args, **kwargs)
+
+        backend_mod.install_dlc = install_with_clicks
+        try:
+            b.handleDrop([str(new_pack)])
+        finally:
+            backend_mod.install_dlc = real_install
+
+        assert seen["busy"] is True
+        assert old_pack.is_dir()  # not removed mid-install
+        assert (gta / "mods" / "update" / "x64" / "dlcpacks" / "newpack" / "dlc.rpf").exists()
+        assert b.property("activeProfile") == ""
+        assert b.property("useModsFolder") is True
+        assert b.property("busy") is False
+        assert sorted(p["name"] for p in b.property("packs")) == ["newpack", "oldpack"]
+
+
+def test_a_second_drop_during_an_install_is_ignored_with_a_notice(tmp: Path):
+    with sandboxed_backend(tmp) as (b, gta):
+        backend_mod = sys.modules["backend"]
+        first = tmp / "one" / "first"
+        second = tmp / "two" / "second"
+        for d in (first, second):
+            d.mkdir(parents=True)
+            (d / "dlc.rpf").write_text("x")
+
+        real_install = backend_mod.install_dlc
+
+        def install_then_drop_again(*args, **kwargs):
+            b.handleDrop([str(second)])  # dropped while the first is still copying
+            return real_install(*args, **kwargs)
+
+        backend_mod.install_dlc = install_then_drop_again
+        try:
+            b.handleDrop([str(first)])
+        finally:
+            backend_mod.install_dlc = real_install
+
+        dlcpacks = gta / "mods" / "update" / "x64" / "dlcpacks"
+        assert sorted(p.name for p in dlcpacks.iterdir()) == ["first"]
+        assert any("Bitte warten" in h["text"] for h in b.property("history"))
+
+
 def test_unreadable_settings_are_kept_and_reported_in_the_log(tmp: Path):
     broken = '{"gta_path": "F:\\\\Games", "profiles": [ {"id": '
     with sandboxed_backend(tmp, raw_config=broken) as (b, gta):

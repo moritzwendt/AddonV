@@ -432,6 +432,9 @@ class Backend(QObject):
 
     @Slot(bool)
     def setUseModsFolder(self, on: bool) -> bool:
+        if self._blocked():
+            self.textsChanged.emit()
+            return False
         if not on:
             if not self._confirm(T("direct_warning_title"), T("direct_warning_body"),
                                   confirm_label=T("yes"), danger=True):
@@ -449,6 +452,8 @@ class Backend(QObject):
 
     @Slot()
     def chooseGtaPath(self) -> None:
+        if self._blocked():
+            return
         chosen = QFileDialog.getExistingDirectory(None, T("choose_gta_dialog"))
         if not chosen:
             return
@@ -465,6 +470,8 @@ class Backend(QObject):
 
     @Slot()
     def chooseDlclist(self) -> None:
+        if self._blocked():
+            return
         path, _ = QFileDialog.getOpenFileName(None, T("choose_dlclist_dialog"), "", "XML (*.xml)")
         if not path:
             return
@@ -476,6 +483,8 @@ class Backend(QObject):
 
     @Slot()
     def clearDlclist(self) -> None:
+        if self._blocked():
+            return
         self.config.dlclist_xml_path = ""
         self.config.save()
         self.textsChanged.emit()
@@ -599,6 +608,8 @@ class Backend(QObject):
 
     @Slot(str)
     def toggleMod(self, name: str) -> None:
+        if self._blocked():
+            return
         path = self._xml_path()
         if path is None:
             return
@@ -607,6 +618,8 @@ class Backend(QObject):
 
     @Slot("QVariantList")
     def toggleMods(self, names) -> None:
+        if self._blocked():
+            return
         path = self._xml_path()
         if path is None:
             return
@@ -629,6 +642,8 @@ class Backend(QObject):
 
     @Slot(str)
     def removeMod(self, name: str) -> None:
+        if self._blocked():
+            return
         paths = self._paths()
         if paths is None:
             return
@@ -641,6 +656,8 @@ class Backend(QObject):
 
     @Slot("QVariantList")
     def removeMods(self, names) -> None:
+        if self._blocked():
+            return
         paths = self._paths()
         if paths is None:
             return
@@ -659,6 +676,8 @@ class Backend(QObject):
 
     @Slot("QVariantList")
     def removeElsFiles(self, paths) -> None:
+        if self._blocked():
+            return
         paths = [str(p) for p in paths]
         if not paths:
             return
@@ -681,6 +700,8 @@ class Backend(QObject):
 
     @Slot("QVariantList")
     def setOrder(self, names) -> None:
+        if self._blocked():
+            return
         xml = self._xml_path()
         if xml is None:
             return
@@ -692,6 +713,8 @@ class Backend(QObject):
 
     @Slot()
     def repair(self) -> None:
+        if self._blocked():
+            return
         paths = self._paths()
         xml = self._xml_path()
         if paths is None or xml is None:
@@ -812,6 +835,8 @@ class Backend(QObject):
 
     @Slot(str)
     def toggleProfile(self, pid: str) -> None:
+        if self._blocked():
+            return
         if self.config.active_profile == pid:
             self._deactivate_profile()
         else:
@@ -819,6 +844,8 @@ class Backend(QObject):
 
     @Slot(str, "QVariantList", "QVariantList", str, str)
     def saveProfile(self, name, dlc_names, els_names, color, edit_id) -> None:
+        if self._blocked():
+            return
         name = str(name).strip()
         if not name:
             return
@@ -847,6 +874,8 @@ class Backend(QObject):
 
     @Slot(str)
     def deleteProfile(self, pid: str) -> None:
+        if self._blocked():
+            return
         prof = self._find_profile(pid)
         if prof is None:
             return
@@ -1045,7 +1074,7 @@ class Backend(QObject):
         self._install_to_zone(self._urls_to_paths(urls), zone)
 
     def _install_to_zone(self, srcs, zone) -> None:
-        if self._busy:
+        if self._blocked():
             return
         if not srcs:
             self._log("INFO", "err", T("zone_nothing"))
@@ -1243,7 +1272,7 @@ class Backend(QObject):
 
     @Slot(str)
     def renameExecute(self, model: str) -> None:
-        if self._busy:
+        if self._blocked():
             return
         if not self._rename_files or not self._rename_base:
             self._info(T("rename_no_files_title"), T("rename_no_files_body"))
@@ -1365,7 +1394,7 @@ class Backend(QObject):
 
     @Slot()
     def chooseArchives(self) -> None:
-        if self._busy:
+        if self._blocked():
             return
         files, _ = QFileDialog.getOpenFileNames(
             None, T("choose_archives_dialog"), "",
@@ -1375,7 +1404,7 @@ class Backend(QObject):
             self._install_sources([Path(f) for f in files])
 
     def _install_sources(self, srcs) -> None:
-        if self._busy:
+        if self._blocked():
             return
         if not srcs:
             self._log("INFO", "err", T("drop_nothing"))
@@ -1473,6 +1502,16 @@ class Backend(QObject):
             self._log("INFO", "ok", T("archive_extracted", name=src.name))
             items.append((dest, src.name, True))
         return items
+
+    def _blocked(self) -> bool:
+        # while an install / rename / profile switch runs, clicks that would change
+        # mods are ignored (processEvents lets them arrive mid-copy); say why once
+        if not self._busy:
+            return False
+        msg = T("busy_wait")
+        if not self._history or self._history[-1][2] != msg:
+            self._log("INFO", "info", msg)
+        return True
 
     def _set_busy(self, busy: bool) -> None:
         self._busy = busy

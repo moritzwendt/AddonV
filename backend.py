@@ -440,6 +440,8 @@ class Backend(QObject):
         self.config.use_mods_folder = on
         self.config.save()
         self.textsChanged.emit()
+        # the packs/ELS lists come from the other folder now
+        self.reloadMods()
         return True
 
     @Slot()

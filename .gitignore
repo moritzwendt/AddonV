@@ -26,3 +26,5 @@ installer/AddonV.ico
 # Local config
 .addonv/
 to-do.txt
+# Test runs
+.pytest_cache/

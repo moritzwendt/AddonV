@@ -36,6 +36,7 @@ def stash_els(
     if not els_root.is_dir() or not file_names:
         return 0
     wanted = set(file_names)
+    dest = unused_dir(els_root, profile_name)
     moved = 0
     for name in wanted:
         for f in els_root.rglob(name):

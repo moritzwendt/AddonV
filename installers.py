@@ -19,6 +19,11 @@ ProgressFn = Callable[[int, int, str], None]
 
 _CHUNK = 4 * 1024 * 1024
 
+# temporary sibling folders used while a DLC pack is replaced
+_STAGING_NEW = ".addonv-new"
+_STAGING_OLD = ".addonv-old"
+_STAGING_SUFFIXES = (_STAGING_NEW, _STAGING_OLD)
+
 
 @dataclass
 class InstallResult:
@@ -89,6 +94,19 @@ def find_dlc_packs_deep(src: Path) -> list[Path]:
     return packs
 
 
+def _swap_in(staging: Path, target: Path, backup: Path) -> None:
+    # the old version is only deleted once the new one is in place
+    if target.exists():
+        target.rename(backup)
+    try:
+        staging.rename(target)
+    except OSError:
+        if backup.exists() and not target.exists():
+            backup.rename(target)
+        raise
+    shutil.rmtree(backup, ignore_errors=True)
+
+
 def install_dlc(
     pack: Path,
     dlcpacks_dir: Path,
@@ -105,21 +123,26 @@ def install_dlc(
             conflict=True,
         )
     log(T("dlc_installing", name=pack.name))
+    # copy next to the target first and swap afterwards, so a failed copy
+    # (disk full, locked file) never costs the user the version they have
+    staging = dlcpacks_dir / (pack.name + _STAGING_NEW)
+    backup = dlcpacks_dir / (pack.name + _STAGING_OLD)
     try:
         files = _iter_files(pack)
         total = sum(f.stat().st_size for f in files)
         target.parent.mkdir(parents=True, exist_ok=True)
-        if target.exists():
-            shutil.rmtree(target)
+        for stale in (staging, backup):  # leftovers of a crashed install
+            if stale.exists():
+                shutil.rmtree(stale)
         done = 0
         if progress is not None:
             progress(0, total, pack.name)
         for f in files:
             rel = f.relative_to(pack)
-            done = _copy_file(f, target / rel, done, total, progress)
+            done = _copy_file(f, staging / rel, done, total, progress)
+        _swap_in(staging, target, backup)
     except OSError as exc:
-        if target.exists():
-            shutil.rmtree(target, ignore_errors=True)
+        shutil.rmtree(staging, ignore_errors=True)
         return InstallResult(
             False, T("dlc_copy_failed", name=pack.name, err=str(exc)), pack.name
         )
@@ -197,6 +220,8 @@ def list_installed_dlc_info(dlcpacks_dir: Path) -> list[InstalledDlc]:
                     if not entry.is_dir():
                         continue
                 except OSError:
+                    continue
+                if entry.name.endswith(_STAGING_SUFFIXES):
                     continue
                 if not os.path.exists(os.path.join(entry.path, "dlc.rpf")):
                     continue
